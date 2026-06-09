@@ -5,8 +5,18 @@ import {
   Bell, Search, Plus, Users, MessageCircle, Home, Music,
   Calendar, Flame, Clock, Settings, User, Image as ImageIcon,
   Video, UserPlus, ChevronRight, Heart, Share2, Play, Lock,
-  Mic, MoreHorizontal, TrendingUp, Zap, BookOpen, Radio,
+  Mic, MoreHorizontal, TrendingUp, Radio,
 } from "lucide-react";
+
+// Sub-component for semantic markup and consistent section styling
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <h2 style={{
+    fontSize: "11px", fontWeight: 600, color: "#484848",
+    textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "12px"
+  }}>
+    {children}
+  </h2>
+);
  
 const communities = [
   { name: "The Boys", members: 24, streak: 45, initials: "TB", hue: "#10b981" },
@@ -70,8 +80,10 @@ const weekStats = [
  
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("Dashboard");
-  const [likedPosts, setLikedPosts] = useState({ 0: false, 1: true });
-  const toggleLike = (i) => setLikedPosts(prev => ({ ...prev, [i]: !prev[i] }));
+  const [likedPosts, setLikedPosts] = useState<Record<number, boolean>>({ 0: false, 1: true });
+  
+  // FIXED: Added typed parameter signature to satisfy TypeScript configuration rules
+  const toggleLike = (i: number) => setLikedPosts(prev => ({ ...prev, [i]: !prev[i] }));
  
   return (
     <div style={{
@@ -158,7 +170,6 @@ export default function DashboardPage() {
  
         {/* Nav */}
         <nav style={{ flex: 1, padding: "10px 8px", display: "flex", flexDirection: "column", gap: 1 }}>
-          {/* Section label */}
           <div style={{ fontSize: 9, fontWeight: 600, color: "#303030", textTransform: "uppercase", letterSpacing: "0.1em", padding: "8px 10px 6px" }}>Main</div>
           {navItems.slice(0,4).map(({ icon: Icon, label }) => {
             const active = activeTab === label;
@@ -219,10 +230,10 @@ export default function DashboardPage() {
         </div>
       </aside>
  
-      {/* ── Main ── */}
+      {/* ── Main Panel ── */}
       <main style={{ flex: 1, overflowY: "auto", minWidth: 0 }}>
  
-        {/* Header */}
+        {/* Sticky Header Bar */}
         <header style={{
           position: "sticky", top: 0, zIndex: 40,
           background: "rgba(8,8,8,0.96)", borderBottom: "1px solid #141414",
@@ -230,8 +241,7 @@ export default function DashboardPage() {
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* Mobile hamburger */}
-            <button className="sh-mobile-bar" onClick={() => {}} style={{
+            <button className="sh-mobile-bar" style={{
               width: 32, height: 32, borderRadius: 7, background: "#111", border: "1px solid #1c1c1c",
               cursor: "pointer", alignItems: "center", justifyContent: "center", color: "#666",
             }}>
@@ -255,7 +265,6 @@ export default function DashboardPage() {
               }} />
               <span style={{ fontSize: 10, color: "#2a2a2a", border: "1px solid #1e1e1e", borderRadius: 4, padding: "1px 5px" }}>⌘K</span>
             </div>
-            {/* Mobile search */}
             <button className="sh-mobile-bar" style={{
               width: 32, height: 32, borderRadius: 7, background: "#111", border: "1px solid #1c1c1c",
               cursor: "pointer", alignItems: "center", justifyContent: "center", color: "#666",
@@ -270,7 +279,6 @@ export default function DashboardPage() {
               <Bell size={14} color="#666" />
               <div style={{ position: "absolute", top: 6, right: 6, width: 5, height: 5, borderRadius: "50%", background: "#10b981", outline: "2px solid #080808" }} />
             </button>
-            {/* Avatar */}
             <div style={{
               width: 32, height: 32, borderRadius: 7, background: "#10b981",
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -282,16 +290,15 @@ export default function DashboardPage() {
  
         <div className="sh-wrapper" style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 28px 60px", display: "flex", gap: 22 }}>
  
-          {/* ── Left column ── */}
+          {/* ── Center Dashboard Stream ── */}
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 26 }}>
  
-            {/* Hero streak */}
+            {/* Main Engagement Card */}
             <div className="sh-hero" style={{
               background: "#0b0b0b", border: "1px solid #141414", borderRadius: 14,
               padding: "26px 30px", display: "flex", justifyContent: "space-between",
               gap: 20, overflow: "hidden", position: "relative",
             }}>
-              {/* Subtle glow */}
               <div style={{
                 position: "absolute", top: -40, left: -40, width: 200, height: 200,
                 borderRadius: "50%", background: "radial-gradient(circle, #10b98112 0%, transparent 70%)",
@@ -329,7 +336,6 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </div>
-              {/* Streak ring visual */}
               <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                 <svg width="100" height="100" viewBox="0 0 100 100">
                   <circle cx="50" cy="50" r="40" fill="none" stroke="#141414" strokeWidth="6" />
@@ -344,7 +350,7 @@ export default function DashboardPage() {
               </div>
             </div>
  
-            {/* Quick actions */}
+            {/* Quick Actions Grid */}
             <div>
               <SectionLabel>Quick actions</SectionLabel>
               <div className="sh-actions-row" style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 8 }}>
@@ -367,7 +373,7 @@ export default function DashboardPage() {
               </div>
             </div>
  
-            {/* Circles */}
+            {/* Encrypted Circles Section */}
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <SectionLabel>Your circles</SectionLabel>
@@ -382,7 +388,6 @@ export default function DashboardPage() {
                     padding: "16px", cursor: "pointer", transition: "border-color 0.12s",
                     position: "relative", overflow: "hidden",
                   }}>
-                    {/* Top accent line */}
                     <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: c.hue + "60", borderRadius: "11px 11px 0 0" }} />
                     <div style={{
                       width: 38, height: 38, borderRadius: 9, background: c.hue + "18",
@@ -405,7 +410,7 @@ export default function DashboardPage() {
               </div>
             </div>
  
-            {/* Feed */}
+            {/* Global Recent Activity Feed */}
             <div>
               <SectionLabel>Recent activity</SectionLabel>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -414,7 +419,6 @@ export default function DashboardPage() {
                     background: "#0b0b0b", border: "1px solid #141414", borderRadius: 12,
                     padding: "18px 20px", transition: "border-color 0.12s",
                   }}>
-                    {/* Post header */}
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                       <div style={{ position: "relative" }}>
                         <div style={{
@@ -441,7 +445,6 @@ export default function DashboardPage() {
  
                     <p style={{ color: "#b0b0b0", lineHeight: 1.65, marginBottom: 14, fontSize: 14 }}>{post.content}</p>
  
-                    {/* Image placeholder */}
                     <div style={{
                       aspectRatio: "16/9", borderRadius: 8, background: "#0e0e0e",
                       border: "1px solid #161616", display: "flex", alignItems: "center",
@@ -456,7 +459,6 @@ export default function DashboardPage() {
                       </div>
                     </div>
  
-                    {/* Actions */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div style={{ display: "flex", gap: 4 }}>
                         <button onClick={() => toggleLike(i)} style={{
@@ -492,10 +494,10 @@ export default function DashboardPage() {
             </div>
           </div>
  
-          {/* ── Right sidebar ── */}
+          {/* ── Contextual Right Sidebar ── */}
           <div className="sh-right" style={{ width: 248, flexShrink: 0, flexDirection: "column", gap: 14 }}>
  
-            {/* Online now */}
+            {/* Online Status Monitor */}
             <div style={{ background: "#0b0b0b", border: "1px solid #141414", borderRadius: 12, padding: "16px 16px" }}>
               <SectionLabel>Online now</SectionLabel>
               <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -524,7 +526,7 @@ export default function DashboardPage() {
               </div>
             </div>
  
-            {/* Now playing */}
+            {/* Audio Stream Controller / Aux Monitor */}
             <div style={{ background: "#0b0b0b", border: "1px solid #141414", borderRadius: 12, padding: "16px" }}>
               <SectionLabel>On the aux</SectionLabel>
               <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
@@ -552,7 +554,7 @@ export default function DashboardPage() {
               </div>
             </div>
  
-            {/* Upcoming */}
+            {/* Upcoming Hub Schedule */}
             <div style={{ background: "#0b0b0b", border: "1px solid #141414", borderRadius: 12, padding: "16px" }}>
               <SectionLabel>Upcoming</SectionLabel>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -573,61 +575,43 @@ export default function DashboardPage() {
               </div>
             </div>
  
-            {/* This week */}
+            {/* Weekly Insights Summary */}
             <div style={{ background: "#0b0b0b", border: "1px solid #141414", borderRadius: 12, padding: "16px" }}>
-              <SectionLabel>This week</SectionLabel>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
-                {weekStats.map(({ label, value }) => (
-                  <div key={label} style={{ background: "#0e0e0e", borderRadius: 7, padding: "10px 11px", border: "1px solid #171717" }}>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", letterSpacing: "-0.5px", lineHeight: 1 }}>{value}</div>
-                    <div style={{ fontSize: 10, color: "#383838", marginTop: 4 }}>{label}</div>
+              <SectionLabel>This Week</SectionLabel>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 8px" }}>
+                {weekStats.map((stat, i) => (
+                  <div key={i} style={{ background: "#0e0e0e", padding: "10px", borderRadius: "8px", border: "1px solid #121212" }}>
+                    <div style={{ fontSize: "10px", color: "#383838", marginBottom: "4px" }}>{stat.label}</div>
+                    <div style={{ fontSize: "16px", fontWeight: 700, color: "#fff" }}>{stat.value}</div>
                   </div>
                 ))}
               </div>
             </div>
+
           </div>
         </div>
       </main>
- 
-      {/* ── Mobile bottom nav ── */}
-      <div className="sh-mobile-bar" style={{
+
+      {/* Persistent Bottom Bar Dock Navigation For Smaller viewports */}
+      <nav className="sh-mobile-bar" style={{
         position: "fixed", bottom: 0, left: 0, right: 0, height: 64,
-        background: "rgba(11,11,11,0.97)", borderTop: "1px solid #141414",
-        backdropFilter: "blur(20px)", zIndex: 100,
-        alignItems: "center", justifyContent: "space-around",
-        padding: "0 8px 10px",
+        background: "rgba(11,11,11,0.85)", borderTop: "1px solid #141414",
+        backdropFilter: "blur(20px)", zIndex: 50, display: "none",
+        alignItems: "center", justifyContent: "space-around", padding: "0 10px"
       }}>
-        {[
-          { icon: Home, label: "Home" },
-          { icon: Users, label: "Circles" },
-          { icon: MessageCircle, label: "Messages" },
-          { icon: Music, label: "Music" },
-          { icon: User, label: "Profile" },
-        ].map(({ icon: Icon, label }) => {
-          const active = (label === "Home" && activeTab === "Dashboard") || activeTab === label;
+        {navItems.slice(0, 5).map(({ icon: Icon, label }) => {
+          const active = activeTab === label;
           return (
-            <button key={label} onClick={() => setActiveTab(label === "Home" ? "Dashboard" : label)} style={{
+            <button key={label} onClick={() => setActiveTab(label)} style={{
               background: "none", border: "none", display: "flex", flexDirection: "column",
-              alignItems: "center", gap: 4, cursor: "pointer",
-              color: active ? "#10b981" : "#383838", width: 52, padding: "8px 0 0",
+              alignItems: "center", gap: 4, color: active ? "#10b981" : "#484848", cursor: "pointer"
             }}>
-              <Icon size={19} color={active ? "#10b981" : "#383838"} />
-              <span style={{ fontSize: 9, fontWeight: active ? 600 : 400 }}>{label}</span>
+              <Icon size={18} />
+              <span style={{ fontSize: "9px", fontWeight: active ? 600 : 400 }}>{label}</span>
             </button>
           );
         })}
-      </div>
+      </nav>
     </div>
   );
 }
- 
-// Helper: section label
-function SectionLabel({ children }) {
-  return (
-    <div style={{
-      fontSize: 10, fontWeight: 600, color: "#303030",
-      textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 12,
-    }}>{children}</div>
-  );
-}
- 
