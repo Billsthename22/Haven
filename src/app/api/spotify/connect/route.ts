@@ -1,0 +1,24 @@
+import { createClient } from "@/src/lib/supabase/server";
+import { NextResponse } from "next/server";
+
+const SPOTIFY_REDIRECT_URI = "https://af42-2a00-23c6-6911-8d01-8933-e27-ce60-5057.ngrok-free.app/callback";
+
+export async function GET() {
+  const base = process.env.NEXT_PUBLIC_SITE_URL!;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.redirect(`${base}/login`);
+  }
+
+  const params = new URLSearchParams({
+    client_id: process.env.SPOTIFY_CLIENT_ID!,
+    response_type: "code",
+    redirect_uri: SPOTIFY_REDIRECT_URI,
+    scope: "user-read-currently-playing user-read-playback-state",
+    show_dialog: "false",
+  });
+
+  return NextResponse.redirect(`https://accounts.spotify.com/authorize?${params}`);
+}
