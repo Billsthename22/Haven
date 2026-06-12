@@ -229,16 +229,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div style={{ padding: "0 8px 14px", borderTop: "1px solid #141414" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "12px 10px 8px" }}>
-            <div style={{ width: 28, height: 28, borderRadius: 7, background: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 10, color: "#fff", flexShrink: 0, letterSpacing: "-0.5px" }}>
-              {initials}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#d0d0d0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName ?? "—"}</div>
-              <div style={{ fontSize: 10, color: "#303030", marginTop: 1 }}>Online</div>
-            </div>
-          </div>
+        <div style={{ padding: "0 8px 14px" }}>
           <button onClick={handleLogout} className="sh-nav-btn" style={{
             width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7,
             border: "none", cursor: "pointer", transition: "all 0.12s",
