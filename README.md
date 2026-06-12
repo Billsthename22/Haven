@@ -1,36 +1,120 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Safe Haven
+
+A private, encrypted social platform built for trusted communities. Safe Haven lets users connect in secure circles, share messages, and express themselves — with Spotify integration showing what they're listening to in real time.
+
+---
+
+## Stack
+
+- **Next.js 16** (App Router, `src/` structure)
+- **Supabase** — auth (email + OTP), database, SSR sessions
+- **Tailwind CSS** — styling
+- **Spotify Web API** — OAuth 2.0, real-time now-playing widget
+- **ngrok** — HTTPS tunnel for local Spotify OAuth during development
+
+---
+
+## Features
+
+- Email/password signup with OTP email verification
+- Secure login with Supabase Auth and cookie-based SSR sessions
+- Protected routes via `src/proxy.ts` (Next.js 16 route middleware)
+- Dashboard with real user data (name, greeting, avatar initials)
+- Spotify "On the Aux" widget — shows currently playing track, progress bar, album art
+- Communities, Messaging, Notifications, and Profile pages (UI complete, data wiring in progress)
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Set up environment variables
+
+Create a `.env.local` file at the root:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SITE_URL=https://your-ngrok-url.ngrok-free.app
+SPOTIFY_REDIRECT_URI=https://your-ngrok-url.ngrok-free.app/callback
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+```
+
+### 3. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. Spotify OAuth (local dev)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Spotify requires an HTTPS redirect URI. Use [ngrok](https://ngrok.com) to tunnel localhost:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+ngrok http 3000
+```
 
-## Learn More
+Update `.env.local`, `src/app/api/spotify/connect/route.ts`, `src/app/callback/route.ts`, and `next.config.ts` (`allowedDevOrigins`) with the new ngrok URL each time it changes.
 
-To learn more about Next.js, take a look at the following resources:
+Add the ngrok callback URL to your Spotify app's redirect URIs at [developer.spotify.com](https://developer.spotify.com/dashboard).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+  app/
+    (auth)/
+      login/          # Login page
+      signup/         # Signup page with OTP verification
+    (main)/
+      dashboard/      # Main dashboard
+      communities/    # Communities browser
+      messaging/      # Direct messages
+      notifications/  # Notification feed
+      profile/        # User profile
+    api/
+      spotify/
+        connect/      # Initiates Spotify OAuth
+        now-playing/  # Fetches current track, handles token refresh
+      auth/
+        logout/       # Clears Supabase session
+    callback/         # Spotify OAuth callback (exchanges code for tokens)
+    auth/callback/    # Supabase email verification callback
+  components/
+    dashboard/
+      SpotifyWidget   # Real-time Spotify now-playing widget
+  lib/
+    supabase/
+      client.ts       # Browser Supabase client
+      server.ts       # Server-side Supabase client (SSR cookies)
+  proxy.ts            # Route protection middleware (Next.js 16)
+supabase/
+  spotify_tokens.sql  # Schema for storing Spotify OAuth tokens
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## What's Left
+
+- [ ] Wire Communities page to real Supabase data (schema + queries)
+- [ ] Wire Messaging to real conversations (schema + real-time subscriptions)
+- [ ] Wire Notifications to real events
+- [ ] Wire Profile to real user data (bio, avatar upload, gallery)
+- [ ] Google OAuth login
+- [ ] Forgot password flow
+- [ ] Production deployment (Vercel + permanent redirect URI for Spotify)
+- [ ] Replace ngrok dependency with a stable domain for Spotify OAuth
+
+---
+
+## Supabase Setup
+
+Run `supabase/spotify_tokens.sql` in your Supabase SQL editor to create the `spotify_tokens` table required for the Spotify integration.
