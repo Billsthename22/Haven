@@ -1,7 +1,7 @@
 import { createClient } from "@/src/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-const SPOTIFY_REDIRECT_URI = "https://af42-2a00-23c6-6911-8d01-8933-e27-ce60-5057.ngrok-free.app/callback";
+const SPOTIFY_REDIRECT_URI = "https://havenn-rosy.vercel.app/callback";
 
 export async function GET() {
   const base = process.env.NEXT_PUBLIC_SITE_URL!;

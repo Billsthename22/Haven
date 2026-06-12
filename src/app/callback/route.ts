@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: "https://af42-2a00-23c6-6911-8d01-8933-e27-ce60-5057.ngrok-free.app/callback",
+      redirect_uri: "https://havenn-rosy.vercel.app/callback",
     }),
   });
 
