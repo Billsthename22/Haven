@@ -5,8 +5,9 @@ import {
   Bell, Search, Plus, Users, MessageCircle, Home, Music,
   Calendar, Flame, Clock, Settings, User, Image as ImageIcon,
   Video, UserPlus, ChevronRight, Heart, Share2, Lock,
-  Mic, MoreHorizontal, TrendingUp,
+  Mic, MoreHorizontal, TrendingUp, LogOut,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/src/lib/supabase/client";
 import SpotifyWidget from "@/src/components/dashboard/SpotifyWidget";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -88,6 +89,7 @@ const weekStats = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [likedPosts, setLikedPosts] = useState<Record<number, boolean>>({ 0: false, 1: true });
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -96,6 +98,12 @@ export default function DashboardPage() {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
   }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   const toggleLike = (i: number) => setLikedPosts(prev => ({ ...prev, [i]: !prev[i] }));
 
@@ -219,6 +227,26 @@ export default function DashboardPage() {
             <span style={{ fontSize: 9, color: "#2a4030" }}>0</span>
             <span style={{ fontSize: 9, color: "#10b981" }}>Top 5%</span>
           </div>
+        </div>
+
+        <div style={{ padding: "0 8px 14px", borderTop: "1px solid #141414" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "12px 10px 8px" }}>
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 10, color: "#fff", flexShrink: 0, letterSpacing: "-0.5px" }}>
+              {initials}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#d0d0d0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName ?? "—"}</div>
+              <div style={{ fontSize: 10, color: "#303030", marginTop: 1 }}>Online</div>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="sh-nav-btn" style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7,
+            border: "none", cursor: "pointer", transition: "all 0.12s",
+            background: "transparent", color: "#484848", fontSize: 13,
+          }}>
+            <LogOut size={15} color="#383838" />
+            Sign out
+          </button>
         </div>
 
       </aside>
