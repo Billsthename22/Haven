@@ -1,6 +1,6 @@
 import { db } from "@/app/lib/db";
 import bcrypt from "bcryptjs";
-import { Prisma } from "@/app/generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
