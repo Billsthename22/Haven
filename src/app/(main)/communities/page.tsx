@@ -10,7 +10,6 @@ import {
 
 const communities = [
   { id: 1, name: "The Boys", members: 24, streak: 45, category: "Friends", initials: "TB", hue: "#10b981" },
-  { id: 2, name: "Babcock Crew", members: 18, streak: 27, category: "School", initials: "BC", hue: "#0ea5e9" },
   { id: 3, name: "Weekend Vibes", members: 31, streak: 60, category: "Lifestyle", initials: "WV", hue: "#8b5cf6" },
   { id: 4, name: "Football Club", members: 54, streak: 21, category: "Sports", initials: "FC", hue: "#e97316" },
 ];
