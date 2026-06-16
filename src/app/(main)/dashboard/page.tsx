@@ -2,20 +2,14 @@
  
 import React, { useState, useEffect, useRef } from "react";
 import {
-<<<<<<< HEAD
-  Bell, Search, Plus, Users, MessageCircle, Home, Music,
-  Calendar, Flame, Clock, Settings, User, Image as ImageIcon,
-  Video, UserPlus, ChevronRight, Heart, Share2, Lock,
-  Mic, MoreHorizontal, TrendingUp, LogOut,
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/src/lib/supabase/client";
-=======
-  Plus, Users, Flame, Calendar, Image as ImageIcon,
-  Video, UserPlus, Heart, Mic, X, Globe
-} from "lucide-react";
->>>>>>> f674a15 (new refined ui)
-import SpotifyWidget from "@/src/components/dashboard/SpotifyWidget";
+    Bell, Search, Plus, Users, MessageCircle, Home, Music,
+    Calendar, Flame, Clock, Settings, User, Image as ImageIcon,
+    Video, UserPlus, ChevronRight, Heart, Share2, Lock,
+    Mic, MoreHorizontal, TrendingUp, LogOut, X, Globe
+  } from "lucide-react";
+  import { useRouter } from "next/navigation";
+  import { createClient } from "@/src/lib/supabase/client";
+  import SpotifyWidget from "@/src/components/dashboard/SpotifyWidget";
  
 // Imported isolated components
 import Header from "@/src/components/dashboard/Header";
@@ -76,21 +70,6 @@ export default function DashboardPage() {
       .then(data => setFeedPosts(data.posts || []))
       .catch(err => console.error("Feed load error:", err));
   }, []);
-<<<<<<< HEAD
-
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
-
-  const toggleLike = (i: number) => setLikedPosts(prev => ({ ...prev, [i]: !prev[i] }));
-
-  const displayName = user?.user_metadata?.full_name ?? user?.email ?? null;
-  const initials = getInitials(displayName);
-  const firstName = getFirstName(displayName);
-
-=======
  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -187,7 +166,6 @@ export default function DashboardPage() {
     outline: "none", fontFamily: "inherit",
   };
  
->>>>>>> f674a15 (new refined ui)
   return (
     <div style={{
       minHeight: "100vh", background: "#f4f2ff",
@@ -223,183 +201,6 @@ export default function DashboardPage() {
         .sh-pill { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
         .stat-up { font-size: 10px; font-weight: 500; margin-top: 2px; }
       `}</style>
-<<<<<<< HEAD
-
-      <aside className="sh-sidebar" style={{
-        width: 228, flexShrink: 0, borderRight: "1px solid #141414",
-        background: "#0b0b0b", flexDirection: "column",
-        position: "sticky", top: 0, height: "100vh", overflow: "hidden",
-      }}>
-        <div style={{ padding: "22px 18px 18px", borderBottom: "1px solid #141414" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 4px #10b98118" }}>
-              <Lock size={14} color="#fff" strokeWidth={2.5} />
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-0.3px", color: "#fff" }}>Safe Haven</div>
-              <div style={{ fontSize: 10, color: "#383838", marginTop: 1, letterSpacing: "0.02em" }}>encrypted circles</div>
-            </div>
-          </div>
-        </div>
-
-        <nav style={{ flex: 1, padding: "10px 8px", display: "flex", flexDirection: "column", gap: 1 }}>
-          <div style={{ fontSize: 9, fontWeight: 600, color: "#303030", textTransform: "uppercase", letterSpacing: "0.1em", padding: "8px 10px 6px" }}>Main</div>
-          {navItems.slice(0, 4).map(({ icon: Icon, label }) => {
-            const active = activeTab === label;
-            return (
-              <button key={label} className="sh-nav-btn" onClick={() => setActiveTab(label)} style={{
-                display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7,
-                border: "none", cursor: "pointer", textAlign: "left", transition: "all 0.12s",
-                background: active ? "#131313" : "transparent",
-                color: active ? "#fff" : "#484848", fontWeight: active ? 500 : 400, fontSize: 13, position: "relative",
-              }}>
-                {active && <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 2.5, height: 16, borderRadius: 2, background: "#10b981" }} />}
-                <Icon size={15} color={active ? "#10b981" : "#383838"} />
-                {label}
-                {label === "Notifications" && (
-                  <div style={{ marginLeft: "auto", width: 16, height: 16, borderRadius: "50%", background: "#10b981", fontSize: 9, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>3</div>
-                )}
-              </button>
-            );
-          })}
-
-          <div style={{ fontSize: 9, fontWeight: 600, color: "#303030", textTransform: "uppercase", letterSpacing: "0.1em", padding: "14px 10px 6px" }}>Explore</div>
-          {navItems.slice(4).map(({ icon: Icon, label }) => {
-            const active = activeTab === label;
-            return (
-              <button key={label} className="sh-nav-btn" onClick={() => setActiveTab(label)} style={{
-                display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7,
-                border: "none", cursor: "pointer", textAlign: "left", transition: "all 0.12s",
-                background: active ? "#131313" : "transparent",
-                color: active ? "#fff" : "#484848", fontWeight: active ? 500 : 400, fontSize: 13, position: "relative",
-              }}>
-                {active && <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 2.5, height: 16, borderRadius: 2, background: "#10b981" }} />}
-                <Icon size={15} color={active ? "#10b981" : "#383838"} />
-                {label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div style={{ margin: "0 8px 14px", padding: "14px", borderRadius: 10, background: "#0f1a13", border: "1px solid #163020" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 3, marginBottom: 8 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
-            <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Streak active</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-            <span style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: "-1px", lineHeight: 1 }}>42</span>
-            <span style={{ fontSize: 13, color: "#10b981", fontWeight: 600 }}>days 🔥</span>
-          </div>
-          <div style={{ marginTop: 10, height: 3, background: "#132010", borderRadius: 2 }}>
-            <div style={{ width: "70%", height: "100%", background: "#10b981", borderRadius: 2 }} />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
-            <span style={{ fontSize: 9, color: "#2a4030" }}>0</span>
-            <span style={{ fontSize: 9, color: "#10b981" }}>Top 5%</span>
-          </div>
-        </div>
-
-        <div style={{ padding: "0 8px 14px" }}>
-          <button onClick={handleLogout} className="sh-nav-btn" style={{
-            width: "100%", display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7,
-            border: "none", cursor: "pointer", transition: "all 0.12s",
-            background: "transparent", color: "#484848", fontSize: 13,
-          }}>
-            <LogOut size={15} color="#383838" />
-            Sign out
-          </button>
-        </div>
-
-      </aside>
-
-      <main style={{ flex: 1, overflowY: "auto", minWidth: 0 }}>
-        <header style={{
-          position: "sticky", top: 0, zIndex: 40,
-          background: "rgba(8,8,8,0.96)", borderBottom: "1px solid #141414",
-          backdropFilter: "blur(16px)", padding: "0 26px", height: 56,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button className="sh-mobile-bar" style={{
-              width: 32, height: 32, borderRadius: 7, background: "#111", border: "1px solid #1c1c1c",
-              cursor: "pointer", alignItems: "center", justifyContent: "center", color: "#666",
-            }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M1.5 3.5h11M1.5 7h11M1.5 10.5h11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </button>
-            <div>
-              <span style={{ fontWeight: 600, fontSize: 14, color: "#fff" }}>
-                {getGreeting()}{user ? `, ${firstName}` : ""}
-              </span>
-              <span className="sh-hdr-sub" style={{ color: "#383838", marginLeft: 8, fontSize: 13 }}>
-                What&apos;s happening in your circles?
-              </span>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div className="sh-search-box" style={{
-              display: "flex", alignItems: "center", gap: 8, background: "#0f0f0f",
-              border: "1px solid #1c1c1c", borderRadius: 8, padding: "6px 12px", width: 240,
-            }}>
-              <Search size={13} color="#383838" />
-              <input placeholder="Search circles, posts, people…" style={{
-                background: "none", border: "none", outline: "none", color: "#aaa", fontSize: 12, flex: 1,
-              }} />
-              <span style={{ fontSize: 10, color: "#2a2a2a", border: "1px solid #1e1e1e", borderRadius: 4, padding: "1px 5px" }}>⌘K</span>
-            </div>
-            <button className="sh-mobile-bar" style={{
-              width: 32, height: 32, borderRadius: 7, background: "#111", border: "1px solid #1c1c1c",
-              cursor: "pointer", alignItems: "center", justifyContent: "center", color: "#666",
-            }}>
-              <Search size={14} />
-            </button>
-            <button style={{
-              position: "relative", width: 32, height: 32, borderRadius: 7,
-              background: "#0f0f0f", border: "1px solid #1c1c1c", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Bell size={14} color="#666" />
-              <div style={{ position: "absolute", top: 6, right: 6, width: 5, height: 5, borderRadius: "50%", background: "#10b981", outline: "2px solid #080808" }} />
-            </button>
-            <div style={{
-              width: 32, height: 32, borderRadius: 7, background: "#10b981",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 700, fontSize: 11, color: "#fff", cursor: "pointer",
-              boxShadow: "0 0 0 2px #0b0b0b, 0 0 0 4px #10b98130",
-              letterSpacing: "-0.5px",
-            }}>
-              {initials}
-            </div>
-          </div>
-        </header>
-
-        <div className="sh-wrapper" style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 28px 60px", display: "flex", gap: 22 }}>
-
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 26 }}>
-
-            <div className="sh-hero" style={{
-              background: "#0b0b0b", border: "1px solid #141414", borderRadius: 14,
-              padding: "26px 30px", display: "flex", justifyContent: "space-between",
-              gap: 20, overflow: "hidden", position: "relative",
-            }}>
-              <div style={{ position: "absolute", top: -40, left: -40, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle, #10b98112 0%, transparent 70%)", pointerEvents: "none" }} />
-              <div style={{ position: "relative" }}>
-                <div style={{
-                  display: "inline-flex", alignItems: "center", gap: 5,
-                  background: "#0f1a13", border: "1px solid #163020",
-                  borderRadius: 5, padding: "3px 9px", marginBottom: 12,
-                  fontSize: 9, fontWeight: 700, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.1em",
-                }}>
-                  <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981" }} />
-                  Streak active
-                </div>
-                <div className="sh-hero-num" style={{ fontSize: 52, fontWeight: 900, color: "#fff", letterSpacing: "-2.5px", lineHeight: 1 }}>42 days</div>
-                <div style={{ color: "#383838", marginTop: 8, fontSize: 13, lineHeight: 1.6, maxWidth: 320 }}>Your circles are active. Keep the momentum going.</div>
-                <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
-                  <button style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", background: "#10b981", color: "#fff", border: "none", borderRadius: 7, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
-                    <Plus size={13} /> New post
-=======
  
       {/* ── RESPONSIVE HYBRID SIDEBAR DRAWER ── */}
       <Sidebar 
@@ -435,7 +236,6 @@ export default function DashboardPage() {
                 <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                   <button onClick={() => openComposer("text")} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 18px", background: "#534AB7", color: "#fff", border: "none", borderRadius: 9, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
                     <Plus size={13} /> Create post
->>>>>>> f674a15 (new refined ui)
                   </button>
                   <button onClick={() => setIsInviteModalOpen(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 14px", background: "#F4C0D1", color: "#993556", border: "none", borderRadius: 9, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
                     <UserPlus size={13} /> Invite friends
