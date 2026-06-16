@@ -1,6 +1,51 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-type SupabaseAdminClient = ReturnType<typeof createClient>;
+type Database = {
+  public: {
+    Tables: {
+      User: {
+        Row: {
+          id: string;
+          email: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+        };
+        Relationships: [];
+      };
+      PasswordResetToken: {
+        Row: {
+          id: string;
+          email: string;
+          tokenHash: string;
+          expiresAt: string;
+        };
+        Insert: {
+          id: string;
+          email: string;
+          tokenHash: string;
+          expiresAt: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          tokenHash?: string;
+          expiresAt?: string;
+        };
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+  };
+};
+
+type SupabaseAdminClient = SupabaseClient<Database>;
 
 let db: SupabaseAdminClient | undefined;
 
@@ -18,7 +63,7 @@ export function getDb() {
     throw new Error("Missing Supabase cloud infrastructure environment variables.");
   }
 
-  db = createClient(supabaseUrl, supabaseServiceKey, {
+  db = createClient<Database>(supabaseUrl, supabaseServiceKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
