@@ -533,8 +533,8 @@ export default function DashboardPage() {
             <form onSubmit={handleCreateCircle}>
               <div className="sh-modal-body">
                 <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, marginBottom: 6 }}>Group Name</label>
-                <input type="text" placeholder="e.g., Close Friends, Study Crew" value={newCircleName} onChange={e => setNewCircleName(e.target.value)} style={{ ...inputStyle, marginBottom: 16 }} />
-                <button type="submit" style={{ width: "100%", padding: "10px", background: "#7F77DD", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Create Group</button>
+                <input type="text" placeholder="e.g., Close Friends, Study Crew" value={newCircleName} onChange={e => setNewCircleName(e.target.value)} style={inputStyle} />
+                <button type="submit" style={{ width: "100%", marginTop: 14, height: 38, background: "#7F77DD", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Create Group</button>
               </div>
             </form>
           </div>
@@ -551,18 +551,18 @@ export default function DashboardPage() {
             </div>
             <form onSubmit={handleSendInvite}>
               <div className="sh-modal-body">
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, marginBottom: 6 }}>Friend's Email</label>
-                  <input type="email" placeholder="name@domain.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} style={inputStyle} />
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, marginBottom: 6 }}>Email Address</label>
+                  <input type="email" placeholder="friend@example.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} style={inputStyle} />
                 </div>
-                <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, marginBottom: 6 }}>Select Destination Group</label>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, marginBottom: 6 }}>Select Private Group</label>
                   <select value={inviteCircleId} onChange={e => setInviteCircleId(e.target.value)} style={inputStyle}>
                     <option value="">-- Choose a group --</option>
                     {circles.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
-                <button type="submit" style={{ width: "100%", padding: "10px", background: "#7F77DD", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Send Invitation</button>
+                <button type="submit" style={{ width: "100%", height: 38, background: "#7F77DD", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Send Invitation</button>
               </div>
             </form>
           </div>

@@ -10,6 +10,7 @@ interface HeaderProps {
   setSearchQuery: (query: string) => void;
   onProfileClick?: () => void;
   onLogoutClick?: () => void;
+  onAvatarClick?: () => void; // Added to fix the TypeScript error
 }
 
 function getGreeting() {
@@ -36,6 +37,7 @@ export default function Header({
   setSearchQuery,
   onProfileClick,
   onLogoutClick,
+  onAvatarClick, // Destructured the new prop
 }: HeaderProps) {
   const displayName = fullName ?? email ?? "User";
   const initials = getInitials(displayName);
@@ -57,6 +59,12 @@ export default function Header({
 
   const toggleDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Trigger the parent sidebar toggle function if passed
+    if (onAvatarClick) {
+      onAvatarClick();
+    }
+    
     setIsOpen((prev) => !prev);
   };
 

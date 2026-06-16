@@ -20,12 +20,17 @@ export async function POST(request: Request) {
     
     const targetEmail = email.toLowerCase().trim();
 
-    // 1. Verify user exists in the capitalized "User" table
-    const userResult = await db.query(
-      'SELECT id FROM "User" WHERE email = $1', 
-      [targetEmail]
-    );
-    const user = userResult.rows[0];
+    // 1. Verify user exists using Supabase Client syntax
+    const { data: user, error: userError } = await db
+      .from("User")
+      .select("id")
+      .eq("email", targetEmail)
+      .maybeSingle(); // Avoid throwing an error if no user matches
+
+    if (userError) {
+      console.error("Database user check error:", userError);
+      return NextResponse.json({ error: "Database verification failed" }, { status: 500 });
+    }
 
     // Security check: Safeguard against user enumeration attacks
     if (!user) {
@@ -33,19 +38,27 @@ export async function POST(request: Request) {
     }
 
     // 2. Generate a secure, unique id string and token payload
-    const tokenId = crypto.randomUUID(); // Matching the 'text' format for id
+    const tokenId = crypto.randomUUID(); 
     const plainToken = crypto.randomBytes(32).toString("hex");
     
     // Hash the token using SHA-256 to securely populate "tokenHash"
     const tokenHash = crypto.createHash("sha256").update(plainToken).digest("hex");
-    const expiresAt = new Date(Date.now() + 3600000); // 1 hour validity window
+    const expiresAt = new Date(Date.now() + 3600000).toISOString(); // Supabase expects ISO timestamp strings
 
-    // 3. Insert record directly into "PasswordResetToken" using raw SQL parameters
-    await db.query(
-      `INSERT INTO "PasswordResetToken" (id, email, "tokenHash", "expiresAt") 
-       VALUES ($1, $2, $3, $4)`,
-      [tokenId, targetEmail, tokenHash, expiresAt]
-    );
+    // 3. Insert record directly into "PasswordResetToken" using Supabase insert syntax
+    const { error: insertError } = await db
+      .from("PasswordResetToken")
+      .insert({
+        id: tokenId,
+        email: targetEmail,
+        tokenHash: tokenHash,
+        expiresAt: expiresAt
+      });
+
+    if (insertError) {
+      console.error("Database token insertion error:", insertError);
+      return NextResponse.json({ error: "Failed to generate security token" }, { status: 500 });
+    }
 
     // 4. Send out the recovery link using the un-hashed plain token
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${plainToken}`;
