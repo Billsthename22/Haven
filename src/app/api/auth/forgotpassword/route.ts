@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
-import { db } from "@/src/lib/db"; 
+import { getDb } from "@/src/lib/db";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -13,6 +13,7 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(request: Request) {
   try {
+    const db = getDb();
     const { email } = await request.json();
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
