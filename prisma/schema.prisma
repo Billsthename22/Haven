@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Profile {
+  id           String   @id @default(cuid())
+  fullName     String
+  email        String   @unique
+  passwordHash String
+  isVerified   Boolean  @default(false)
+  isOnline     Boolean  @default(false)
+  customStatus String?
+  activeHours  Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  posts        Post[]   @relation("UserPosts")
+  likes        Like[]
+  circles      Circle[] @relation("CircleMembers")
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model Circle {
+  id          String   @id @default(cuid())
+  name        String
+  memberCount Int      @default(1)
+  streakDays  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  members     Profile[] @relation("CircleMembers")
+  posts       Post[]
+}
+
+model Post {
+  id         String   @id @default(cuid())
+  content    String
+  mediaUrl   String?
+  type       String   @default("text") // text, photo, video, audio
+  isPublic   Boolean  @default(false)  // Added flag to scale queries cleanly for the public space feed
+  likesCount Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  // Relationships
+  authorId   String
+  author     Profile  @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  
+  // OPTIONAL FIELD PIPELINES FOR PUBLIC LOGIC
+  circleId   String?  // Changed to optional to allow independent public stream entries
+  circle     Circle?  @relation(fields: [circleId], references: [id], onDelete: Cascade) // Changed to optional 
+  likes      Like[]
+
+  @@index([isPublic]) // Optimized index for pulling down the global timeline quickly
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Relationships
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, postId])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  scheduledAt DateTime
+  createdAt   DateTime @default(now())
+}

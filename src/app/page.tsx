@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Lock } from "lucide-react";
+import { ArrowRight, ShieldCheck, HelpCircle } from "lucide-react";
 import Image from "next/image";
 
 type SplashState = "visible" | "fading" | "completed";
@@ -12,87 +12,138 @@ export default function HomePage() {
 
   useEffect(() => {
     const fadeTimer = setTimeout(() => setSplashState("fading"), 1600);
-    const completeTimer = setTimeout(() => setSplashState("completed"), 2300);
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(completeTimer);
-    };
+    const completeTimer = setTimeout(() => setSplashState("completed"), 2200);
+    return () => { clearTimeout(fadeTimer); clearTimeout(completeTimer); };
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center relative overflow-hidden antialiased select-none">
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[140px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-emerald-900/10 rounded-full blur-[90px]" />
-      </div>
+    <div style={{
+      minHeight: "100vh",
+      background: "#f4f2ff",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: "'Inter', -apple-system, sans-serif",
+      position: "relative",
+      overflow: "hidden",
+    }}>
 
+      {/* PHASE 1: WELCOME LOADING SCREEN */}
       {splashState !== "completed" && (
-        <div
-          className={`absolute flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-            splashState === "fading" ? "opacity-0 scale-95 blur-sm" : "opacity-100 scale-100"
-          }`}
-        >
-          <div className="h-28 w-28 rounded-[2.5rem] bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-[2px] shadow-[0_0_60px_rgba(16,185,129,0.35)]">
-            <div className="h-full w-full rounded-[2.3rem] bg-neutral-950 flex items-center justify-center overflow-hidden">
-              <Image src="/logo2.png" alt="Safe Haven" width={80} height={80} priority className="object-contain" />
+        <div style={{
+          position: "absolute",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          transition: "opacity 0.7s ease, transform 0.7s ease",
+          opacity: splashState === "fading" ? 0 : 1,
+          transform: splashState === "fading" ? "scale(0.95)" : "scale(1)",
+          zIndex: 20,
+        }}>
+          {/* Logo tile */}
+          <div style={{
+            width: 80, height: 80, borderRadius: 20,
+            background: "#EEEDFE", border: "1.5px solid #c4b8f8",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            position: "relative",
+          }}>
+            <div style={{ position: "absolute", top: 4, left: 4, width: 8, height: 8, borderTop: "1.5px solid #7F77DD", borderLeft: "1.5px solid #7F77DD" }} />
+            <div style={{ position: "absolute", bottom: 4, right: 4, width: 8, height: 8, borderBottom: "1.5px solid #7F77DD", borderRight: "1.5px solid #7F77DD" }} />
+            <div style={{ width: 44, height: 44, background: "#534AB7", borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Image src="/logo2.png" alt="Safe Haven" width={28} height={28} priority style={{ objectFit: "contain" }} />
             </div>
           </div>
-          <h1 className="mt-8 text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-neutral-50 to-neutral-300">
+
+          <h1 style={{ marginTop: 20, fontSize: 22, fontWeight: 600, color: "#3C3489", letterSpacing: "-0.5px" }}>
             Safe Haven
           </h1>
-          <p className="text-zinc-500 text-[10px] font-bold mt-3 tracking-[0.4em] uppercase">
-            Encrypted Communities
-          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+            <span style={{ fontSize: 11, letterSpacing: "0.05em", color: "#9990dd", fontWeight: 500 }}>
+              Opening your secure workspace...
+            </span>
+          </div>
         </div>
       )}
 
+      {/* PHASE 2: LOGIN / SIGNUP CARD */}
       {splashState === "completed" && (
-        <div className="w-full max-w-md px-6 animate-in fade-in duration-700 relative z-10">
-          <div className="relative bg-neutral-900/40 border border-neutral-800 backdrop-blur-2xl p-8 rounded-[2.5rem] shadow-2xl shadow-black/40 overflow-hidden">
-            <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[200px] h-[200px] bg-emerald-500/10 blur-[90px] rounded-full pointer-events-none" />
+        <div style={{ width: "100%", maxWidth: 400, padding: "0 16px", zIndex: 10 }}>
+          <div style={{
+            background: "#fff",
+            border: "0.5px solid #ede8ff",
+            borderRadius: 18,
+            padding: "32px 28px",
+            position: "relative",
+            overflow: "hidden",
+          }}>
+            {/* Top purple accent line */}
+            <div style={{
+              position: "absolute", top: 0, left: "25%", right: "25%",
+              height: 2, background: "#7F77DD", borderRadius: "0 0 4px 4px",
+            }} />
 
-            <div className="text-center mb-10 relative">
-              <div className="h-16 w-16 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-[2px] shadow-lg shadow-emerald-900/20">
-                <div className="h-full w-full rounded-xl bg-neutral-950 flex items-center justify-center overflow-hidden">
-                  <Image src="/logo2.png" alt="Safe Haven" width={42} height={42} priority className="object-contain" />
+            {/* Header */}
+            <div style={{ textAlign: "center", marginBottom: 28 }}>
+              <div style={{
+                width: 56, height: 56, margin: "0 auto 16px",
+                background: "#EEEDFE", border: "1px solid #c4b8f8",
+                borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center",
+                position: "relative",
+              }}>
+                <div style={{ position: "absolute", top: 4, left: 4, width: 7, height: 7, borderTop: "1.5px solid #7F77DD", borderLeft: "1.5px solid #7F77DD" }} />
+                <div style={{ position: "absolute", bottom: 4, right: 4, width: 7, height: 7, borderBottom: "1.5px solid #7F77DD", borderRight: "1.5px solid #7F77DD" }} />
+                <div style={{ width: 30, height: 30, background: "#534AB7", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Image src="/logo2.png" alt="Safe Haven" width={18} height={18} priority style={{ objectFit: "contain" }} />
                 </div>
               </div>
-              <h2 className="text-2xl font-bold tracking-tight mt-5 text-transparent bg-clip-text bg-gradient-to-b from-neutral-50 to-neutral-300">
-                Enter the Haven
-              </h2>
-              <p className="text-neutral-400 text-xs mt-2 leading-relaxed max-w-[240px] mx-auto">
-                A private encrypted shelter for your community.
+              <h2 style={{ fontSize: 20, fontWeight: 600, color: "#3C3489", margin: "0 0 4px" }}>Welcome to Safe Haven</h2>
+              <p style={{ fontSize: 13, color: "#7F77DD", margin: 0, fontWeight: 500 }}>
+                Log in or create an account to get started
               </p>
             </div>
 
-            <div className="space-y-3 relative">
-              <Link
-                href="/signup"
-                className="group w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-md shadow-emerald-950/30 transition-all active:scale-[0.98]"
-              >
-                Create Account
-                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            {/* Call to Actions (Buttons) */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <Link href="/signup" style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                padding: "11px 0", background: "#534AB7", color: "#fff",
+                border: "none", borderRadius: 10, fontSize: 13, fontWeight: 500,
+                textDecoration: "none", cursor: "pointer",
+              }}>
+                Get started free
+                <ArrowRight size={14} />
               </Link>
-              <Link
-                href="/login"
-                className="w-full flex items-center justify-center py-3.5 rounded-xl border border-neutral-800 bg-neutral-900/40 hover:bg-neutral-900 hover:border-neutral-700 text-neutral-200 text-sm font-medium transition-all active:scale-[0.98]"
-              >
-                Sign In
+              <Link href="/login" style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "11px 0", background: "transparent", color: "#534AB7",
+                border: "1px solid #c4b8f8", borderRadius: 10, fontSize: 13, fontWeight: 500,
+                textDecoration: "none", cursor: "pointer",
+              }}>
+                Log in to your account
               </Link>
             </div>
 
-            <div className="mt-8 flex items-center justify-center gap-2 text-neutral-500 text-[11px]">
-              <Lock size={12} className="text-neutral-600" />
-              <span>End-to-end encrypted system</span>
+            {/* Security Status Footer */}
+            <div style={{
+              marginTop: 20, paddingTop: 16,
+              borderTop: "1px solid #f0eeff",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+              fontSize: 12, color: "#1D9E75", fontWeight: 500,
+            }}>
+              <ShieldCheck size={14} color="#1D9E75" />
+              Secure, encrypted connection
             </div>
           </div>
 
-          <p className="text-center text-[10px] text-neutral-500 mt-6 leading-relaxed max-w-xs mx-auto">
-            By continuing you agree to the{" "}
-            <span className="underline hover:text-neutral-300 cursor-pointer transition-colors">
+          {/* Terms and Privacy notice */}
+          <p style={{
+            textAlign: "center", fontSize: 11, color: "#9990dd",
+            marginTop: 14, lineHeight: "1.4"
+          }}>
+            By continuing, you agree to our basic usage analytics and{" "}
+            <span style={{ color: "#7F77DD", textDecoration: "underline", cursor: "pointer" }}>
               Terms of Service
-            </span>
-            .
+            </span>.
           </p>
         </div>
       )}

@@ -2,13 +2,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Sparkles, Mail, Lock } from "lucide-react";
+import { Mail, Lock, AlertTriangle, ShieldCheck, Terminal } from "lucide-react";
 import Image from "next/image";
-import { createClient } from "@/src/lib/supabase/client";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -24,96 +21,156 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: formData.email.trim(),
-      password: formData.password,
-    });
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-    if (authError) {
-      setError(authError.message);
+      const data = (await response.json()) as {
+        error?: string;
+        requiresVerification?: boolean;
+      };
+
+      if (!response.ok) {
+        if (data.requiresVerification) {
+          setError("AUTH_FAILURE: Account unverified. Dispatching primary OTP matrix payload.");
+        } else {
+          setError(data.error || "CRITICAL: Access authorization rejected. Credentials invalid.");
+        }
+        return;
+      }
+
+      window.location.href = "/dashboard";
+    } catch (err) {
+      console.error("Login client breakdown:", err);
+      setError("SYSTEM_ERR: Unexpected telemetry interface collapse.");
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    router.push("/dashboard");
-    router.refresh();
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col lg:flex-row overflow-hidden relative">
+    <div className="min-h-screen bg-[#0a0a0b] text-zinc-100 flex flex-col lg:flex-row overflow-hidden relative antialiased font-mono">
+      {/* Tactical Grid Overlay & Ambient Glow */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f23_1px,transparent_1px),linear-gradient(to_bottom,#1f1f23_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-25" />
       <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        <div className="absolute -top-40 left-1/3 w-[600px] h-[600px] bg-emerald-600/20 blur-[160px] rounded-full" />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-teal-600/10 blur-[140px] rounded-full" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#7F77DD]/10 blur-[140px] rounded-full" />
       </div>
 
-      <header className="lg:hidden relative z-10 px-6 pt-10 pb-6 text-center">
-        <div className="flex justify-center mb-4">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-[2px] flex items-center justify-center shadow-lg">
-            <div className="h-full w-full rounded-xl bg-zinc-950 flex items-center justify-center">
-              <Image src="/logo2.png" alt="Safe Haven" width={28} height={28} priority className="object-contain" />
-            </div>
+      {/* Mobile Top HUD */}
+      <header className="lg:hidden relative z-10 px-6 pt-10 pb-6 border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 border border-[#7F77DD]/40 bg-zinc-900/50 flex items-center justify-center">
+            <Image 
+              src="/logo2.png" 
+              alt="Safe Haven" 
+              width={20} 
+              height={20} 
+              style={{ height: "auto" }}
+              priority 
+              className="object-contain filter brightness-125" 
+            />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold tracking-[0.2em] uppercase text-white">Safe Haven</h1>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">SECURE_CORE_v1.0</p>
           </div>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Safe Haven</h1>
-        <p className="text-zinc-400 text-sm mt-2">Secure encrypted communities</p>
+        <div className="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-1 text-zinc-400 tracking-wider">
+          STATUS: READY
+        </div>
       </header>
 
-      <main className="hidden lg:flex flex-1 relative items-center">
-        <div className="relative z-10 flex flex-col justify-center px-24">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-[2px] flex items-center justify-center shadow-lg shadow-emerald-900/30">
-              <div className="h-full w-full rounded-xl bg-zinc-950 flex items-center justify-center">
-                <Image src="/logo2.png" alt="Safe Haven" width={26} height={26} priority className="object-contain" />
-              </div>
+      {/* Left Column: Tactical Cinematic Display Panel */}
+      <main className="hidden lg:flex flex-1 relative items-center border-r border-zinc-900 bg-gradient-to-b from-zinc-950 to-[#0d0d0f]">
+        <div className="relative z-10 flex flex-col justify-center px-20 w-full max-w-3xl">
+          <div className="flex items-center gap-3 mb-12">
+            <div className="h-10 w-10 border border-[#7F77DD] bg-[#7F77DD]/5 flex items-center justify-center shadow-[0_0_15px_rgba(127,119,221,0.15)]">
+              <Image 
+                src="/logo2.png" 
+                alt="Safe Haven" 
+                width={22} 
+                height={22} 
+                style={{ height: "auto" }}
+                priority 
+                className="object-contain filter brightness-125" 
+              />
             </div>
-            <span className="text-3xl font-bold tracking-tight">Safe Haven</span>
+            <div>
+              <span className="text-md font-bold tracking-[0.25em] uppercase text-white">Safe Haven</span>
+              <div className="text-[9px] text-[#7F77DD] tracking-widest uppercase mt-0.5 font-bold">SECURE NODE OPERATOR</div>
+            </div>
           </div>
-          <h2 className="text-6xl font-bold leading-[1.05] max-w-xl">
-            Your space.<br />Secured.
+          
+          <h2 className="text-5xl font-black tracking-tight text-white uppercase leading-none">
+            AUTHENTICATE<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-[#7F77DD] to-zinc-500">
+              OPERATOR_ACCESS
+            </span>
           </h2>
-          <p className="text-zinc-400 mt-6 max-w-lg leading-relaxed">
-            A private encrypted environment built for trusted communities.
+          <p className="text-zinc-400 mt-6 max-w-md text-xs leading-relaxed font-sans">
+            Initializing encrypted session link sequence. Connection tunneling protocols mapped through standard architecture routines. 
           </p>
-          <div className="mt-14 grid grid-cols-2 gap-5 max-w-xl">
-            <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-6 hover:bg-white/10 transition">
-              <p className="text-sm text-zinc-400">Secure Circles</p>
-              <p className="text-3xl font-bold mt-2">24</p>
+
+          {/* Telemetry Status Grid */}
+          <div className="mt-12 grid grid-cols-2 gap-4 max-w-md">
+            <div className="border border-zinc-800 bg-zinc-950/40 p-5 relative group overflow-hidden">
+              <div className="absolute top-0 left-0 w-2 h-[1px] bg-[#7F77DD]" />
+              <div className="absolute top-0 left-0 w-[1px] h-2 bg-[#7F77DD]" />
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest">ACTIVE_SECURE_CIRCLES</p>
+              <p className="text-2xl font-bold mt-1 text-white tracking-tight">24<span className="text-xs text-[#7F77DD] ml-1">▲</span></p>
             </div>
-            <div className="rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 p-6 hover:bg-white/10 transition">
-              <p className="text-sm text-zinc-400">Encrypted Messages</p>
-              <p className="text-3xl font-bold mt-2">1.2K</p>
+            <div className="border border-zinc-800 bg-zinc-950/40 p-5 relative group overflow-hidden">
+              <div className="absolute top-0 left-0 w-2 h-[1px] bg-[#7F77DD]" />
+              <div className="absolute top-0 left-0 w-[1px] h-2 bg-[#7F77DD]" />
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest">ENCRYPTED_PACKETS_TX</p>
+              <p className="text-2xl font-bold mt-1 text-white tracking-tight">1.2K<span className="text-[10px] text-zinc-600 font-normal ml-1">/SEC</span></p>
             </div>
           </div>
-          <div className="mt-10 text-xs text-zinc-500 tracking-widest uppercase">
-            Built for privacy • Designed for trust
+
+          <div className="mt-16 flex items-center gap-2 text-[10px] text-zinc-500 tracking-wider uppercase">
+            <Terminal size={12} className="text-[#7F77DD]" /> SYSTEM CORE OVERWATCH // SYSTEM LEVEL PROVISIONED
           </div>
         </div>
       </main>
 
-      <section className="w-full lg:w-[520px] flex items-center justify-center px-6 py-10 lg:p-6 relative z-10">
-        <div className="w-full max-w-md">
-          <div className="rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-2xl p-6 sm:p-8 shadow-2xl shadow-black/40">
+      {/* Right Column: High-Tech Login Interface Module */}
+      <section className="w-full lg:w-[560px] flex items-center justify-center px-4 py-8 lg:p-12 relative z-10 bg-zinc-950/20">
+        <div className="w-full max-w-sm">
+          {/* Glassmorphic Tactical Core Frame */}
+          <div className="border border-zinc-800 bg-zinc-950/60 backdrop-blur-xl p-6 sm:p-8 relative shadow-2xl">
+            
+            {/* Structural Geometric Tech Accents */}
+            <div className="absolute -top-[1px] -left-[1px] w-3 h-3 border-t-2 border-l-2 border-[#7F77DD]" />
+            <div className="absolute -top-[1px] -right-[1px] w-3 h-3 border-t-2 border-r-2 border-[#7F77DD]" />
+            <div className="absolute -bottom-[1px] -left-[1px] w-3 h-3 border-b-2 border-l-2 border-[#7F77DD]" />
+            <div className="absolute -bottom-[1px] -right-[1px] w-3 h-3 border-b-2 border-r-2 border-[#7F77DD]" />
 
-            <div className="mb-8 text-center lg:text-left">
-              <div className="hidden lg:flex items-center gap-2 mb-3">
-                <Sparkles size={16} className="text-emerald-400" />
-                <span className="text-xs tracking-wide uppercase text-zinc-400">Secure Access</span>
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck size={14} className="text-[#7F77DD]" />
+                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#7F77DD]">GATEWAY_AUTHENTICATION</span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Sign in to Safe Haven</h2>
-              <p className="text-zinc-400 mt-2 text-sm">Continue into your encrypted communities.</p>
+              <h2 className="text-xl font-bold uppercase tracking-tight text-white">Console Login</h2>
+              <p className="text-zinc-500 mt-1 text-xs font-sans">Verify authorization sequence to establish local interface.</p>
             </div>
 
             {error && (
-              <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-400">
-                {error}
+              <div className="mb-6 flex items-start gap-2 border border-red-900/50 bg-red-950/20 px-4 py-3 text-xs text-red-400">
+                <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-red-500" />
+                <span className="font-mono">{error}</span>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label htmlFor="email" className="text-xs text-zinc-400 flex items-center gap-2 font-medium">
-                  <Mail size={14} /> Email Address
+                <label htmlFor="email" className="text-[10px] tracking-wider text-zinc-400 flex items-center gap-2 uppercase font-bold">
+                  <Mail size={12} className="text-zinc-600" /> Operator Email
                 </label>
                 <input
                   id="email"
@@ -123,19 +180,23 @@ export default function LoginPage() {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="you@example.com"
-                  className="mt-2 w-full rounded-2xl bg-zinc-900/60 border border-white/10 px-4 py-3.5 text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition text-sm"
+                  placeholder="IDENTITY@CORE.SECURE"
+                  className="mt-2 w-full rounded-none bg-zinc-900/40 border border-zinc-800 px-4 py-3 text-white outline-none focus:border-[#7F77DD] focus:bg-zinc-950/60 transition text-xs placeholder-zinc-700 disabled:opacity-50 font-mono tracking-wide"
+                  disabled={isLoading}
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-xs text-zinc-400 flex items-center gap-2 font-medium">
-                    <Lock size={14} /> Password
+                  <label htmlFor="password" className="text-[10px] tracking-wider text-zinc-400 flex items-center gap-2 uppercase font-bold">
+                    <Lock size={12} className="text-zinc-600" /> Access Cypher
                   </label>
-                  <span className="text-xs text-emerald-400 hover:text-emerald-300 cursor-pointer transition-colors">
-                    Forgot password?
-                  </span>
+                  <Link 
+                    href="/forgotpassword" 
+                    className="text-[10px] text-[#7F77DD] hover:text-[#938ce4] transition-colors uppercase font-bold tracking-wide"
+                  >
+                    Forgot Cypher?
+                  </Link>
                 </div>
                 <input
                   id="password"
@@ -146,41 +207,44 @@ export default function LoginPage() {
                   value={formData.password}
                   onChange={handleInputChange}
                   placeholder="••••••••"
-                  className="mt-2 w-full rounded-2xl bg-zinc-900/60 border border-white/10 px-4 py-3.5 text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition text-sm"
+                  className="mt-2 w-full rounded-none bg-zinc-900/40 border border-zinc-800 px-4 py-3 text-white outline-none focus:border-[#7F77DD] focus:bg-zinc-950/60 transition text-xs disabled:opacity-50 font-mono tracking-wide"
+                  disabled={isLoading}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:opacity-90 disabled:opacity-50 disabled:pointer-events-none transition font-semibold shadow-lg shadow-emerald-900/20 active:scale-[0.98] text-sm flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-none bg-[#7F77DD] hover:bg-[#6c63cf] disabled:bg-zinc-900 disabled:text-zinc-600 text-white transition-all font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(127,119,221,0.15)] active:translate-y-[1px]"
               >
                 {isLoading ? (
                   <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Signing In...
+                    <div className="h-3 w-3 animate-spin rounded-none border border-white border-t-transparent" />
+                    RUNNING_AUTH_SEQ...
                   </>
-                ) : "Sign In"}
+                ) : "EXECUTE_SIGN_IN"}
               </button>
             </form>
 
-            <div className="my-7 flex items-center gap-4">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-zinc-500 text-xs tracking-widest select-none">OR</span>
-              <div className="flex-1 h-px bg-white/10" />
+            {/* Sub-Actions / Alternatives Partition */}
+            <div className="my-6 flex items-center gap-3">
+              <div className="flex-1 h-[1px] bg-zinc-900" />
+              <span className="text-zinc-600 text-[9px] tracking-widest select-none font-bold">ALT_PATH</span>
+              <div className="flex-1 h-[1px] bg-zinc-900" />
             </div>
 
             <button
               type="button"
-              className="w-full rounded-2xl border border-white/10 py-3.5 hover:bg-white/5 transition flex items-center justify-center gap-2 text-sm font-medium"
+              disabled={isLoading}
+              className="w-full rounded-none border border-zinc-800 py-3 text-xs tracking-wider uppercase hover:bg-zinc-900/50 hover:border-zinc-700 transition flex items-center justify-center gap-2 text-zinc-300 disabled:opacity-50"
             >
-              Continue with Google
+              Federate via Google Provider
             </button>
 
-            <p className="text-center text-zinc-400 mt-6 text-sm">
-              Don&apos;t have an account?{" "}
-              <Link href="/signup" className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors">
-                Sign up
+            <p className="text-center text-zinc-500 mt-6 text-xs font-sans">
+              Missing node clearance?{" "}
+              <Link href="/signup" className="text-[#7F77DD] hover:text-[#938ce4] font-bold transition-colors font-mono uppercase tracking-wide">
+                Register Node
               </Link>
             </p>
           </div>

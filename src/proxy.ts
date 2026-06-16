@@ -1,48 +1,21 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hasSession = Boolean(request.cookies.get("auth_session")?.value);
 
   const authRoutes = ["/login", "/signup"];
   const protectedRoutes = ["/dashboard", "/communities", "/messaging", "/notifications", "/profile"];
 
-  if (!user && protectedRoutes.some((r) => pathname.startsWith(r))) {
+  if (!hasSession && protectedRoutes.some((r) => pathname.startsWith(r))) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (user && authRoutes.some((r) => pathname === r)) {
+  if (hasSession && authRoutes.some((r) => pathname === r)) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  return supabaseResponse;
+  return NextResponse.next();
 }
 
 export const config = {

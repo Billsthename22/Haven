@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Sparkles, Shield, User, Mail, Lock, AlertCircle, CheckCircle, X } from "lucide-react";
 import Image from "next/image";
-import { createClient } from "@/src/lib/supabase/client";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -62,24 +61,32 @@ export default function SignupPage() {
     setIsLoading(true);
     setErrors({});
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email: formData.email.trim(),
-      password: formData.password,
-      options: {
-        data: { full_name: formData.fullName.trim() },
-        emailRedirectTo: `${location.origin}/auth/callback`,
-      },
-    });
+    try {
+      // 1. Direct fetch targeting your internal secure API
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
-    setIsLoading(false);
+      const data = await response.json();
+      setIsLoading(false);
 
-    if (error) {
-      setErrors({ global: error.message });
-      return;
+      if (!response.ok) {
+        setErrors({ global: data.error || "An unexpected error occurred during registration." });
+        return;
+      }
+
+      // 2. Open built-in validation modal structure
+      setShowVerifyModal(true);
+    } catch (err) {
+      setIsLoading(false);
+      setErrors({ global: "An unexpected error occurred during registration." });
     }
-
-    setShowVerifyModal(true);
   };
 
   const handleOtpChange = (el: HTMLInputElement, idx: number) => {
@@ -103,18 +110,36 @@ export default function SignupPage() {
     setOtpLoading(true);
     setOtpError("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.verifyOtp({
-      email: formData.email.trim(),
-      token: code,
-      type: "signup",
-    });
+    try {
+      // 3. Forward verification tokens straight to your server handler
+      const response = await fetch("/api/auth/verifyOtp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          token: code,
+        }),
+      });
 
-    setOtpLoading(false);
-    if (error) { setOtpError(error.message); return; }
+      const data = await response.json();
+      setOtpLoading(false);
 
-    setOtpSuccess(true);
-    setTimeout(() => router.push("/dashboard"), 1500);
+      if (!response.ok) {
+        setOtpError(data.error || "Invalid or expired verification code.");
+        return;
+      }
+
+      // 4. Success state management!
+      setOtpSuccess(true);
+      setTimeout(() => {
+        router.push("/dashboard");
+        router.refresh();
+      }, 1500);
+
+    } catch (err) {
+      setOtpLoading(false);
+      setOtpError("Failed to verify code. Please try again.");
+    }
   };
 
   const inputClass = (field: string) =>
