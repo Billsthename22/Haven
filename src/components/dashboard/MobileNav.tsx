@@ -15,7 +15,7 @@ export default function MobileNav({ onOpenComposer }: MobileNavProps) {
   const navItems = [
     { icon: Home, label: "Dashboard", path: "/dashboard" },
     { icon: Users, label: "Communities", path: "/communities" },
-    { icon: MessageCircle, label: "Messages", path: "/messages" },
+    { icon: MessageCircle, label: "Messages", path: "/messaging" },
     { icon: Bell, label: "Notifications", path: "/notifications", badge: 3 },
   ];
 
