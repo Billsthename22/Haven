@@ -1,46 +1,50 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Search, Bell, MessageCircle, MoreHorizontal,
   Edit3, Home, Users, User, Music, Calendar,
   Settings, Lock, Phone, Video, Send, Smile,
   Paperclip, Mic, Check, CheckCheck, ImageIcon,
+  ArrowLeft, Flame, X
 } from "lucide-react";
+import MobileNav from "@/src/components/dashboard/MobileNav";
 
-const onlineUsers = [
-  { id: 1, name: "Sarah", initials: "S", hue: "#0ea5e9" },
-  { id: 2, name: "David", initials: "D", hue: "#10b981" },
-  { id: 3, name: "Anna", initials: "A", hue: "#8b5cf6" },
-  { id: 4, name: "Mike", initials: "M", hue: "#e97316" },
-  { id: 5, name: "Emma", initials: "E", hue: "#f59e0b" },
-  { id: 6, name: "James", initials: "J", hue: "#6366f1" },
-];
-
-const conversations = [
-  { id: 1, name: "Sarah Johnson", initials: "SJ", hue: "#0ea5e9", message: "Hey, are you free later? ❤️", time: "2m", unread: 3, online: true },
-  { id: 2, name: "David Parker", initials: "DP", hue: "#10b981", message: "Sent a photo 📸", time: "10m", unread: 0, online: false },
-  { id: 3, name: "Anna Williams", initials: "AW", hue: "#8b5cf6", message: "Typing…", time: "15m", unread: 1, online: true, typing: true },
-  { id: 4, name: "Michael Scott", initials: "MS", hue: "#e97316", message: "That sounds great 😂", time: "1h", unread: 0, online: false },
-  { id: 5, name: "Emma Stone", initials: "ES", hue: "#f59e0b", message: "Let's catch up tomorrow!", time: "2h", unread: 2, online: true },
-  { id: 6, name: "The Boys", initials: "TB", hue: "#10b981", message: "David: Movie night? 🍿", time: "3h", unread: 0, online: false, isGroup: true },
-];
-
-type Message = { id: number; sender: string; text: string; time: string; seen?: boolean };
-const chatMessages: Record<number, Message[]> = {
-  1: [
-    { id: 1, sender: "other", text: "Hey 👋", time: "10:20 AM" },
-    { id: 2, sender: "me", text: "Heyyy ❤️", time: "10:21 AM", seen: true },
-    { id: 3, sender: "other", text: "Are you free later?", time: "10:22 AM" },
-    { id: 4, sender: "me", text: "Yeah! What did you have in mind? 😊", time: "10:23 AM", seen: true },
-    { id: 5, sender: "other", text: "Maybe grab food? There's a new place on VI", time: "10:24 AM" },
-    { id: 6, sender: "me", text: "That sounds perfect, I'm in 🍜", time: "10:25 AM", seen: false },
-  ],
-  2: [
-    { id: 1, sender: "other", text: "Check this out 📸", time: "9:00 AM" },
-    { id: 2, sender: "me", text: "Wow that's fire 🔥", time: "9:02 AM", seen: true },
-  ],
+type Conversation = {
+  id: string;
+  name: string;
+  initials: string;
+  hue: string;
+  message: string;
+  time: string;
+  unread: number;
+  online: boolean;
+  typing?: boolean;
 };
+
+type Message = {
+  id: string;
+  sender: "me" | "other";
+  text: string;
+  time: string;
+  seen?: boolean;
+};
+
+type DirectoryUser = {
+  id: string;
+  name: string;
+  initials: string;
+  handle: string;
+  online: boolean;
+};
+
+const GROUP_COLORS = [
+  { dot: "#7F77DD", bg: "#EEEDFE", text: "#534AB7" },
+  { dot: "#1D9E75", bg: "#E1F5EE", text: "#0F6E56" },
+  { dot: "#D4537E", bg: "#FBEAF0", text: "#993556" },
+  { dot: "#EF9F27", bg: "#FAEEDA", text: "#854F0B" },
+  { dot: "#378ADD", bg: "#E6F1FB", text: "#185FA5" },
+];
 
 const navItems = [
   { icon: Home, label: "Dashboard" },
@@ -53,333 +57,422 @@ const navItems = [
   { icon: Settings, label: "Settings" },
 ];
 
-function SectionLabel({ children, style = {} }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <div style={{
-      fontSize: 10, fontWeight: 600, color: "#2a2a2a",
-      textTransform: "uppercase", letterSpacing: "0.1em",
-      marginBottom: 10, ...style,
-    }}>{children}</div>
-  );
-}
-
-export default function MessagesDesktop() {
+export default function MessagesPage() {
   const [activeTab, setActiveTab] = useState("Messages");
-  const [activeConv, setActiveConv] = useState(1);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConv, setActiveConv] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [search, setSearch] = useState("");
   const [newMessage, setNewMessage] = useState("");
-  const [messages, setMessages] = useState<Record<number, Message[]>>(chatMessages);
+  const [mobileView, setMobileView] = useState<"list" | "chat">("list");
+  
+  // Search Modal Layer State
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [userQuery, setUserQuery] = useState("");
+  const [directoryUsers, setDirectoryUsers] = useState<DirectoryUser[]>([]);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+
+  // Load initial active chat groups/rooms
+  useEffect(() => {
+    async function fetchRooms() {
+      try {
+        const res = await fetch("/api/conversations");
+        if (res.ok) {
+          const data = await res.json();
+          setConversations(data);
+          if (data.length > 0 && !activeConv) setActiveConv(data[0].id);
+        }
+      } catch (err) { console.error(err); }
+    }
+    fetchRooms();
+  }, []);
+
+  // Sync Global System Directory when modal overlay initializes
+  useEffect(() => {
+    if (!showSearchModal) return;
+    
+    async function loadSystemDirectory() {
+      try {
+        const res = await fetch("/api/users"); 
+        if (res.ok) {
+          const liveUsers = await res.json();
+          setDirectoryUsers(liveUsers);
+        }
+      } catch (err) {
+        console.error("Failed to sync global platform identity index:", err);
+      }
+    }
+    
+    loadSystemDirectory();
+  }, [showSearchModal]);
+
+  useEffect(() => {
+    if (!activeConv) return;
+    async function fetchMessages() {
+      try {
+        const res = await fetch(`/api/messages?conversationId=${activeConv}`);
+        if (res.ok) setMessages(await res.json());
+      } catch (err) { console.error(err); }
+    }
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 2000);
+    return () => clearInterval(interval);
+  }, [activeConv]);
+
+  useEffect(() => { scrollToBottom(); }, [messages]);
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !activeConv) return;
+    const text = newMessage;
+    setNewMessage("");
+    const tempId = Math.random().toString();
+    setMessages(prev => [...prev, { id: tempId, sender: "me", text, time: "Now", seen: false }]);
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: activeConv, text }),
+      });
+      if (res.ok) {
+        const update = await fetch(`/api/messages?conversationId=${activeConv}`);
+        if (update.ok) setMessages(await update.json());
+      }
+    } catch (err) { console.error(err); }
+  };
 
   const filtered = conversations.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.message.toLowerCase().includes(search.toLowerCase())
   );
 
-  const active = conversations.find(c => c.id === activeConv);
-  const thread = messages[activeConv] || [];
+  const filteredDirectory = directoryUsers.filter(u =>
+    u.name.toLowerCase().includes(userQuery.toLowerCase()) ||
+    u.handle.toLowerCase().includes(userQuery.toLowerCase())
+  );
 
-  const sendMessage = () => {
-    if (!newMessage.trim()) return;
-    setMessages(prev => ({
-      ...prev,
-      [activeConv]: [...(prev[activeConv] || []), {
-        id: Date.now(), sender: "me", text: newMessage, time: "Now", seen: false,
-      }],
-    }));
-    setNewMessage("");
+  const active = conversations.find(c => c.id === activeConv);
+
+  const openConv = (id: string) => {
+    setActiveConv(id);
+    setMobileView("chat");
+  };
+
+  const handleSelectUser = async (user: DirectoryUser) => {
+    // 1. Check if an active open thread window already matches selected participant name
+    const matchesRoom = conversations.find(c => c.name.toLowerCase() === user.name.toLowerCase());
+    
+    if (matchesRoom) {
+      openConv(matchesRoom.id);
+      setUserQuery("");
+      setShowSearchModal(false);
+      return;
+    }
+
+    try {
+      // 2. Fall back to active backend route handler to check db / initialize a brand new conversation
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientId: user.id
+        }),
+      });
+
+      if (res.ok) {
+        const activeChannel = await res.json();
+        
+        // Sync new chat thread layout properties into sidebar viewport collection list state array
+        setConversations(prev => {
+          if (prev.some(c => c.id === activeChannel.id)) return prev;
+          return [activeChannel, ...prev];
+        });
+        
+        openConv(activeChannel.id);
+      } else {
+        console.error("Backend ecosystem refused room generation handshake context parameters.");
+      }
+    } catch (err) {
+      console.error("Error executing network thread registration context request:", err);
+    }
+    
+    // Clear overlay state structures
+    setUserQuery("");
+    setShowSearchModal(false);
   };
 
   return (
     <div style={{
-      minHeight: "100vh", background: "#080808", color: "#efefef",
+      minHeight: "100vh", background: "#f4f2ff", color: "#111",
       display: "flex", fontFamily: "'Inter', -apple-system, sans-serif", fontSize: "14px",
     }}>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { width: 0; height: 0; }
-        input::placeholder, textarea::placeholder { color: #252525; }
-        .nav-btn:hover  { background: #161616 !important; color: #ccc !important; }
-        .conv-row:hover { background: #0f0f0f !important; }
-        .conv-row:hover .conv-more { opacity: 1 !important; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e5e0ff; border-radius: 4px; }
+        .sh-nav:hover { background: #EEEDFE !important; color: #534AB7 !important; }
+        .sh-conv:hover { background: #EEEDFE !important; }
+        .sh-icon-btn:hover { background: #EEEDFE !important; }
+        .sh-send:hover { opacity: 0.88; }
+        .sh-modal-row:hover { background: #f4f2ff !important; }
+        textarea::placeholder, input::placeholder { color: #c4b8f8; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-        .typing-text { animation: pulse 1.6s ease-in-out infinite; }
-        @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+        .typing-text { animation: pulse 1.6s ease-in-out infinite; color: #7F77DD !important; }
+        @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-4px)} }
         .dot1{animation:bounce 1.2s infinite 0s}
         .dot2{animation:bounce 1.2s infinite 0.2s}
         .dot3{animation:bounce 1.2s infinite 0.4s}
+        
+        @media (max-width: 768px) {
+          .sh-sidebar { display: none !important; }
+          .sh-convlist { 
+            width: 100% !important; 
+            border-right: none !important; 
+            display: ${mobileView === "list" ? "flex" : "none"} !important; 
+            height: calc(100vh - 64px) !important; 
+          }
+          .sh-chatpane { display: ${mobileView === "chat" ? "flex" : "none"} !important; }
+          .sh-back { display: flex !important; }
+          .sh-mobile-dock-wrapper { display: ${mobileView === "list" ? "block" : "none"} !important; }
+        }
+        @media (min-width: 769px) {
+          .sh-convlist { display: flex !important; }
+          .sh-chatpane { display: flex !important; }
+          .sh-back { display: none !important; }
+          .sh-mobile-dock-wrapper { display: none !important; }
+        }
       `}</style>
 
-      <aside style={{
-        width: 228, flexShrink: 0, borderRight: "1px solid #141414",
-        background: "#0b0b0b", display: "flex", flexDirection: "column",
+      {/* ── SIDEBAR (DESKTOP) ── */}
+      <aside className="sh-sidebar" style={{
+        width: 220, flexShrink: 0, borderRight: "1px solid #ede8ff",
+        background: "#fff", display: "flex", flexDirection: "column",
         position: "sticky", top: 0, height: "100vh",
       }}>
-        <div style={{ padding: "22px 18px 18px", borderBottom: "1px solid #141414" }}>
+        <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid #ede8ff" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 9, background: "#10b981",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 0 0 4px #10b98118",
-            }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: "#534AB7", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Lock size={14} color="#fff" strokeWidth={2.5} />
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14, letterSpacing: "-0.3px", color: "#fff" }}>Safe Haven</div>
-              <div style={{ fontSize: 10, color: "#383838", marginTop: 1 }}>encrypted circles</div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: "#2d2870", letterSpacing: "-0.3px" }}>Safe Haven</div>
+              <div style={{ fontSize: 10, color: "#9990dd", marginTop: 1 }}>encrypted circles</div>
             </div>
           </div>
         </div>
 
         <nav style={{ flex: 1, padding: "10px 8px", display: "flex", flexDirection: "column", gap: 1 }}>
-          <div style={{ fontSize: 9, fontWeight: 600, color: "#2a2a2a", textTransform: "uppercase", letterSpacing: "0.1em", padding: "8px 10px 6px" }}>Main</div>
+          <div style={{ fontSize: 9, fontWeight: 600, color: "#c4b8f8", textTransform: "uppercase", letterSpacing: "0.1em", padding: "8px 10px 6px" }}>Main</div>
           {navItems.slice(0, 4).map(({ icon: Icon, label }) => {
-            const active = activeTab === label;
+            const isActive = activeTab === label;
             return (
-              <button key={label} className="nav-btn" onClick={() => setActiveTab(label)} style={{
-                display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7,
+              <button key={label} className="sh-nav" onClick={() => setActiveTab(label)} style={{
+                display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 8,
                 border: "none", cursor: "pointer", textAlign: "left", transition: "all 0.12s",
-                background: active ? "#131313" : "transparent",
-                color: active ? "#fff" : "#484848", fontWeight: active ? 500 : 400,
-                fontSize: 13, position: "relative",
+                background: isActive ? "#EEEDFE" : "transparent",
+                color: isActive ? "#534AB7" : "#9990dd",
+                fontWeight: isActive ? 600 : 400, fontSize: 13, position: "relative",
               }}>
-                {active && <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 2.5, height: 16, borderRadius: 2, background: "#10b981" }} />}
-                <Icon size={15} color={active ? "#10b981" : "#383838"} />
+                {isActive && <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 3, height: 16, borderRadius: 2, background: "#7F77DD" }} />}
+                <Icon size={15} color={isActive ? "#7F77DD" : "#c4b8f8"} />
                 {label}
-                {label === "Notifications" && (
-                  <div style={{ marginLeft: "auto", width: 16, height: 16, borderRadius: "50%", background: "#10b981", fontSize: 9, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>3</div>
-                )}
                 {label === "Messages" && (
-                  <div style={{ marginLeft: "auto", width: 16, height: 16, borderRadius: "50%", background: "#ef444460", fontSize: 9, fontWeight: 700, color: "#ef4444", display: "flex", alignItems: "center", justifyContent: "center" }}>6</div>
+                  <div style={{ marginLeft: "auto", minWidth: 16, height: 16, borderRadius: 8, background: "#FBEAF0", fontSize: 9, fontWeight: 700, color: "#993556", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>6</div>
+                )}
+                {label === "Notifications" && (
+                  <div style={{ marginLeft: "auto", minWidth: 16, height: 16, borderRadius: 8, background: "#E1F5EE", fontSize: 9, fontWeight: 700, color: "#0F6E56", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 4px" }}>3</div>
                 )}
               </button>
             );
           })}
-          <div style={{ fontSize: 9, fontWeight: 600, color: "#2a2a2a", textTransform: "uppercase", letterSpacing: "0.1em", padding: "14px 10px 6px" }}>Explore</div>
+          <div style={{ fontSize: 9, fontWeight: 600, color: "#c4b8f8", textTransform: "uppercase", letterSpacing: "0.1em", padding: "14px 10px 6px" }}>Explore</div>
           {navItems.slice(4).map(({ icon: Icon, label }) => {
-            const active = activeTab === label;
+            const isActive = activeTab === label;
             return (
-              <button key={label} className="nav-btn" onClick={() => setActiveTab(label)} style={{
-                display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 7,
+              <button key={label} className="sh-nav" onClick={() => setActiveTab(label)} style={{
+                display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 8,
                 border: "none", cursor: "pointer", textAlign: "left", transition: "all 0.12s",
-                background: active ? "#131313" : "transparent",
-                color: active ? "#fff" : "#484848", fontWeight: active ? 500 : 400,
-                fontSize: 13, position: "relative",
+                background: isActive ? "#EEEDFE" : "transparent",
+                color: isActive ? "#534AB7" : "#9990dd",
+                fontWeight: isActive ? 600 : 400, fontSize: 13, position: "relative",
               }}>
-                {active && <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 2.5, height: 16, borderRadius: 2, background: "#10b981" }} />}
-                <Icon size={15} color={active ? "#10b981" : "#383838"} />
+                {isActive && <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 3, height: 16, borderRadius: 2, background: "#7F77DD" }} />}
+                <Icon size={15} color={isActive ? "#7F77DD" : "#c4b8f8"} />
                 {label}
               </button>
             );
           })}
         </nav>
 
-        <div style={{ margin: "0 8px 14px", padding: "14px", borderRadius: 10, background: "#0f1a13", border: "1px solid #163020" }}>
+        <div style={{ margin: "0 8px 14px", padding: "14px", borderRadius: 12, background: "#FAEEDA", border: "1px solid #f5d99a" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-            <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981" }} />
-            <span style={{ fontSize: 9, color: "#10b981", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Streak active</span>
+            <Flame size={11} color="#EF9F27" />
+            <span style={{ fontSize: 9, color: "#854F0B", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Streak active</span>
           </div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
-            <span style={{ fontSize: 24, fontWeight: 800, color: "#fff", letterSpacing: "-1px", lineHeight: 1 }}>42</span>
-            <span style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>days 🔥</span>
+            <span style={{ fontSize: 24, fontWeight: 800, color: "#854F0B", letterSpacing: "-1px", lineHeight: 1 }}>42</span>
+            <span style={{ fontSize: 12, color: "#EF9F27", fontWeight: 600 }}>days 🔥</span>
           </div>
-          <div style={{ marginTop: 8, height: 3, background: "#132010", borderRadius: 2 }}>
-            <div style={{ width: "70%", height: "100%", background: "#10b981", borderRadius: 2 }} />
+          <div style={{ marginTop: 8, height: 3, background: "#f5d99a", borderRadius: 2 }}>
+            <div style={{ width: "70%", height: "100%", background: "#EF9F27", borderRadius: 2 }} />
           </div>
         </div>
       </aside>
 
-      <div style={{
-        width: 300, flexShrink: 0, borderRight: "1px solid #141414",
-        background: "#0a0a0a", display: "flex", flexDirection: "column",
+      {/* ── CONVERSATION LIST ── */}
+      <div className="sh-convlist" style={{
+        width: 300, flexShrink: 0, borderRight: "1px solid #ede8ff",
+        background: "#fff", flexDirection: "column",
         height: "100vh", overflow: "hidden",
       }}>
-        <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #141414", flexShrink: 0 }}>
+        <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #ede8ff", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontWeight: 700, fontSize: 15, color: "#fff", letterSpacing: "-0.3px" }}>Messages</span>
+            <span style={{ fontWeight: 700, fontSize: 15, color: "#2d2870", letterSpacing: "-0.3px" }}>Messages</span>
             <div style={{ display: "flex", gap: 6 }}>
-              <button style={{
-                position: "relative", width: 30, height: 30, borderRadius: 7,
-                background: "#0f0f0f", border: "1px solid #1a1a1a",
-                display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#484848",
-              }}>
+              <button className="sh-icon-btn" style={{ width: 30, height: 30, borderRadius: 8, background: "#f4f2ff", border: "1px solid #ede8ff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#9990dd", position: "relative" }}>
                 <Bell size={13} />
-                <div style={{ position: "absolute", top: 6, right: 6, width: 4, height: 4, borderRadius: "50%", background: "#ef4444", border: "1.5px solid #0a0a0a" }} />
+                <div style={{ position: "absolute", top: 6, right: 6, width: 4, height: 4, borderRadius: "50%", background: "#D4537E", border: "1.5px solid #fff" }} />
               </button>
-              <button style={{
-                width: 30, height: 30, borderRadius: 7, background: "#10b981",
-                border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-              }}>
+              <button onClick={() => setShowSearchModal(true)} className="sh-icon-btn" style={{ width: 30, height: 30, borderRadius: 8, background: "#534AB7", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                 <Edit3 size={13} color="#fff" />
               </button>
             </div>
           </div>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 7,
-            background: "#0f0f0f", border: "1px solid #1a1a1a", borderRadius: 8,
-            padding: "7px 10px",
-          }}>
-            <Search size={12} color="#2e2e2e" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" style={{
-              flex: 1, background: "none", border: "none", outline: "none", color: "#ccc", fontSize: 12,
-            }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 7, background: "#f4f2ff", border: "1px solid #ede8ff", borderRadius: 9, padding: "7px 10px" }}>
+            <Search size={12} color="#c4b8f8" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#2d2870", fontSize: 12, fontFamily: "inherit" }} />
           </div>
         </div>
 
-        <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid #0f0f0f", flexShrink: 0 }}>
-          <SectionLabel>Online now</SectionLabel>
-          <div style={{ display: "flex", gap: 10, overflowX: "auto" }}>
-            {onlineUsers.map(u => (
-              <div key={u.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, minWidth: 44, cursor: "pointer" }}>
-                <div style={{ position: "relative" }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 11,
-                    background: u.hue + "22", border: "1.5px solid " + u.hue + "40",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontWeight: 700, fontSize: 13, color: u.hue,
-                  }}>{u.initials}</div>
-                  <div style={{ position: "absolute", bottom: -1, right: -1, width: 8, height: 8, borderRadius: "50%", background: "#10b981", border: "2px solid #0a0a0a" }} />
+        <div style={{ flex: 1, overflowY: "auto", padding: "8px" }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: "#9990dd", textTransform: "uppercase", letterSpacing: "0.1em", padding: "6px 8px 8px" }}>Recent chats</div>
+          {filtered.map((c, i) => {
+            const col = GROUP_COLORS[i % GROUP_COLORS.length];
+            return (
+              <button key={c.id} className="sh-conv" onClick={() => openConv(c.id)} style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 8px", borderRadius: 10, border: "none",
+                background: activeConv === c.id ? "#EEEDFE" : "transparent",
+                cursor: "pointer", textAlign: "left", transition: "background 0.12s", position: "relative",
+              }}>
+                {activeConv === c.id && <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 3, height: 28, borderRadius: 2, background: "#7F77DD" }} />}
+                <div style={{ position: "relative", flexShrink: 0 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, background: col.bg, border: `1.5px solid ${col.dot}35`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: col.text }}>
+                    {c.initials || "…"}
+                  </div>
+                  {c.online && <div style={{ position: "absolute", bottom: -1, right: -1, width: 9, height: 9, borderRadius: "50%", background: "#1D9E75", border: "2px solid #fff" }} />}
                 </div>
-                <span style={{ fontSize: 9, color: "#383838", fontWeight: 500 }}>{u.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ flex: 1, overflowY: "auto", padding: "8px 8px" }}>
-          <SectionLabel style={{ padding: "6px 8px 4px", marginBottom: 4 }}>Recent chats</SectionLabel>
-          {filtered.map(c => (
-            <button key={c.id} className="conv-row" onClick={() => setActiveConv(c.id)} style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 8px", borderRadius: 9, border: "none",
-              background: activeConv === c.id ? "#131313" : "transparent",
-              cursor: "pointer", textAlign: "left", transition: "background 0.12s",
-              position: "relative",
-            }}>
-              {activeConv === c.id && (
-                <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 2.5, height: 28, borderRadius: 2, background: "#10b981" }} />
-              )}
-              <div style={{ position: "relative", flexShrink: 0 }}>
-                <div style={{
-                  width: 38, height: 38, borderRadius: 11,
-                  background: c.hue + "20", border: "1.5px solid " + c.hue + "35",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontWeight: 700, fontSize: 12, color: c.hue,
-                }}>{c.initials}</div>
-                {c.online && <div style={{ position: "absolute", bottom: -1, right: -1, width: 8, height: 8, borderRadius: "50%", background: "#10b981", border: "2px solid #0a0a0a" }} />}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
-                  <span style={{ fontWeight: c.unread > 0 ? 600 : 500, fontSize: 13, color: c.unread > 0 ? "#fff" : "#b0b0b0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%" }}>{c.name}</span>
-                  <span style={{ fontSize: 9, color: c.unread > 0 ? "#10b981" : "#2a2a2a", fontWeight: c.unread > 0 ? 600 : 400, flexShrink: 0 }}>{c.time}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 2 }}>
+                    <span style={{ fontWeight: c.unread > 0 ? 600 : 500, fontSize: 13, color: c.unread > 0 ? "#2d2870" : "#9990dd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%" }}>{c.name}</span>
+                    <span style={{ fontSize: 9, color: c.unread > 0 ? "#7F77DD" : "#c4b8f8", fontWeight: c.unread > 0 ? 600 : 400, flexShrink: 0 }}>{c.time}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span className={c.typing ? "typing-text" : ""} style={{ fontSize: 11, color: "#9990dd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "82%" }}>{c.message}</span>
+                    {c.unread > 0 && (
+                      <div style={{ minWidth: 16, height: 16, borderRadius: 8, background: "#7F77DD", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 700, color: "#fff", padding: "0 4px", flexShrink: 0 }}>{c.unread}</div>
+                    )}
+                  </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span className={c.typing ? "typing-text" : ""} style={{
-                    fontSize: 11, color: c.typing ? "#10b981" : "#303030",
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "82%",
-                  }}>{c.message}</span>
-                  {c.unread > 0 && (
-                    <div style={{ minWidth: 16, height: 16, borderRadius: 8, background: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 700, color: "#fff", padding: "0 4px", flexShrink: 0 }}>{c.unread}</div>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", height: "100vh" }}>
+      {/* ── MOBILE NAVIGATION DOCK INTEGRATION ── */}
+      <div className="sh-mobile-dock-wrapper">
+        <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
+      </div>
 
-        {active && (
+      {/* ── CHAT PANE ── */}
+      <main className="sh-chatpane" style={{ flex: 1, minWidth: 0, flexDirection: "column", height: "100vh", background: "#f4f2ff" }}>
+        {active ? (
           <div style={{
-            height: 56, flexShrink: 0, borderBottom: "1px solid #141414",
-            background: "rgba(8,8,8,0.97)", backdropFilter: "blur(16px)",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 20px",
+            height: 56, flexShrink: 0, borderBottom: "1px solid #ede8ff",
+            background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)",
+            display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button className="sh-back sh-icon-btn" onClick={() => setMobileView("list")} style={{ width: 30, height: 30, borderRadius: 8, background: "#f4f2ff", border: "1px solid #ede8ff", display: "none", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#7F77DD", marginRight: 2 }}>
+                <ArrowLeft size={15} />
+              </button>
               <div style={{ position: "relative" }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: 9,
-                  background: active.hue + "22", border: "1.5px solid " + active.hue + "40",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontWeight: 700, fontSize: 13, color: active.hue,
-                }}>{active.initials}</div>
-                {active.online && <div style={{ position: "absolute", bottom: -1, right: -1, width: 8, height: 8, borderRadius: "50%", background: "#10b981", border: "2px solid #080808" }} />}
+                <div style={{ width: 34, height: 34, borderRadius: 9, background: GROUP_COLORS[0].bg, border: `1.5px solid ${GROUP_COLORS[0].dot}40`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: GROUP_COLORS[0].text }}>
+                  {active.initials || "…"}
+                </div>
+                {active.online && <div style={{ position: "absolute", bottom: -1, right: -1, width: 8, height: 8, borderRadius: "50%", background: "#1D9E75", border: "2px solid #fff" }} />}
               </div>
               <div>
-                <div style={{ fontWeight: 600, fontSize: 14, color: "#fff" }}>{active.name}</div>
-                <div style={{ fontSize: 10, color: active.online ? "#10b981" : "#303030", marginTop: 1, display: "flex", alignItems: "center", gap: 4 }}>
-                  {active.online && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981" }} />}
-                  {active.online ? "Online now" : "Last seen 1h ago"}
+                <div style={{ fontWeight: 600, fontSize: 14, color: "#2d2870" }}>{active.name}</div>
+                <div style={{ fontSize: 10, color: active.online ? "#1D9E75" : "#c4b8f8", marginTop: 1, display: "flex", alignItems: "center", gap: 4 }}>
+                  {active.online && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#1D9E75" }} />}
+                  {active.online ? "Online now" : "Last seen recently"}
                 </div>
               </div>
             </div>
             <div style={{ display: "flex", gap: 4 }}>
               {[{ icon: Phone, sz: 15 }, { icon: Video, sz: 16 }, { icon: MoreHorizontal, sz: 16 }].map(({ icon: Icon, sz }, i) => (
-                <button key={i} style={{
-                  width: 32, height: 32, borderRadius: 7, background: "none", border: "none",
-                  cursor: "pointer", color: "#383838", display: "flex", alignItems: "center", justifyContent: "center",
-                }}
-                  onMouseEnter={e => e.currentTarget.style.color = "#888"}
-                  onMouseLeave={e => e.currentTarget.style.color = "#383838"}
-                >
+                <button key={i} className="sh-icon-btn" style={{ width: 32, height: 32, borderRadius: 8, background: "none", border: "none", cursor: "pointer", color: "#9990dd", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.12s" }}>
                   <Icon size={sz} />
                 </button>
               ))}
             </div>
           </div>
+        ) : (
+          <div style={{ height: 56, flexShrink: 0, borderBottom: "1px solid #ede8ff", background: "rgba(255,255,255,0.95)", display: "flex", alignItems: "center", padding: "0 20px" }}>
+            <span style={{ fontSize: 13, color: "#9990dd" }}>Select a conversation</span>
+          </div>
         )}
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "6px", background: "#080808", borderBottom: "1px solid #0f0f0f", fontSize: 9, color: "#1e1e1e" }}>
-          <Lock size={8} color="#1e1e1e" /> Messages are end-to-end encrypted
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "5px", background: "#EEEDFE", borderBottom: "1px solid #e5e0ff", fontSize: 9, color: "#7F77DD", fontWeight: 500 }}>
+          <Lock size={8} color="#7F77DD" /> Messages are end-to-end encrypted
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px", display: "flex", flexDirection: "column", gap: 0 }}>
-
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px", display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-            <div style={{ flex: 1, height: 1, background: "#141414" }} />
-            <span style={{ fontSize: 9, color: "#222", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.08em" }}>Today</span>
-            <div style={{ flex: 1, height: 1, background: "#141414" }} />
+            <div style={{ flex: 1, height: 1, background: "#ede8ff" }} />
+            <span style={{ fontSize: 9, color: "#c4b8f8", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.08em" }}>Today</span>
+            <div style={{ flex: 1, height: 1, background: "#ede8ff" }} />
           </div>
 
-          {thread.map((msg, i) => {
+          {messages.map((msg, i) => {
             const isMe = msg.sender === "me";
-            const nextSame = i < thread.length - 1 && thread[i + 1].sender === msg.sender;
-            const prevSame = i > 0 && thread[i - 1].sender === msg.sender;
+            const nextSame = i < messages.length - 1 && messages[i + 1].sender === msg.sender;
+            const prevSame = i > 0 && messages[i - 1].sender === msg.sender;
             return (
               <div key={msg.id} style={{
                 display: "flex", justifyContent: isMe ? "flex-end" : "flex-start",
-                marginBottom: nextSame ? 3 : 10,
-                alignItems: "flex-end", gap: 8,
+                marginBottom: nextSame ? 3 : 10, alignItems: "flex-end", gap: 8,
               }}>
                 {!isMe && (
                   <div style={{ width: 26, flexShrink: 0 }}>
                     {!nextSame && (
-                      <div style={{
-                        width: 26, height: 26, borderRadius: 7,
-                        background: (active?.hue || "#0ea5e9") + "22",
-                        border: "1px solid " + (active?.hue || "#0ea5e9") + "30",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontWeight: 700, fontSize: 10, color: active?.hue || "#0ea5e9",
-                      }}>{active?.initials?.[0] || "S"}</div>
+                      <div style={{ width: 26, height: 26, borderRadius: 7, background: GROUP_COLORS[0].bg, border: `1px solid ${GROUP_COLORS[0].dot}30`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 10, color: GROUP_COLORS[0].text }}>
+                        {active?.initials?.[0] || "S"}
+                      </div>
                     )}
                   </div>
                 )}
                 <div style={{ maxWidth: "65%" }}>
                   <div style={{
                     padding: "9px 13px",
-                    background: isMe ? "#10b981" : "#0f0f0f",
-                    border: isMe ? "none" : "1px solid #1a1a1a",
+                    background: isMe ? "#534AB7" : "#fff",
+                    border: isMe ? "none" : "1px solid #ede8ff",
                     borderRadius: isMe
                       ? `11px 11px ${prevSame ? "11px" : "3px"} 11px`
                       : `11px 11px 11px ${prevSame ? "11px" : "3px"}`,
+                    boxShadow: isMe ? "0 2px 8px rgba(83,74,183,0.2)" : "0 1px 4px rgba(127,119,221,0.06)",
                   }}>
-                    <p style={{ fontSize: 13, lineHeight: 1.55, color: isMe ? "#fff" : "#d0d0d0", wordBreak: "break-word" }}>{msg.text}</p>
+                    <p style={{ fontSize: 13, lineHeight: 1.55, color: isMe ? "#fff" : "#2d2870", wordBreak: "break-word" }}>{msg.text}</p>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 3, marginTop: 4 }}>
-                      <span style={{ fontSize: 8, color: isMe ? "rgba(255,255,255,0.45)" : "#252525" }}>{msg.time}</span>
+                      <span style={{ fontSize: 8, color: isMe ? "rgba(255,255,255,0.5)" : "#c4b8f8" }}>{msg.time}</span>
                       {isMe && (msg.seen
-                        ? <CheckCheck size={10} color="rgba(255,255,255,0.55)" />
-                        : <Check size={10} color="rgba(255,255,255,0.35)" />
+                        ? <CheckCheck size={10} color="rgba(255,255,255,0.6)" />
+                        : <Check size={10} color="rgba(255,255,255,0.4)" />
                       )}
                     </div>
                   </div>
@@ -387,53 +480,118 @@ export default function MessagesDesktop() {
               </div>
             );
           })}
-
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 8, marginTop: 4 }}>
-            <div style={{
-              width: 26, height: 26, borderRadius: 7,
-              background: (active?.hue || "#0ea5e9") + "22",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 700, fontSize: 10, color: active?.hue || "#0ea5e9",
-            }}>{active?.initials?.[0] || "S"}</div>
-            <div style={{ padding: "10px 14px", background: "#0f0f0f", border: "1px solid #1a1a1a", borderRadius: "11px 11px 11px 3px", display: "flex", gap: 4, alignItems: "center" }}>
-              {[0, 1, 2].map(i => (
-                <div key={i} className={`dot${i + 1}`} style={{ width: 5, height: 5, borderRadius: "50%", background: "#2e2e2e" }} />
-              ))}
-            </div>
-          </div>
+          <div ref={messagesEndRef} />
         </div>
 
-        <div style={{ padding: "12px 18px", background: "#080808", borderTop: "1px solid #141414", flexShrink: 0 }}>
+        <div style={{ padding: "12px 16px", background: "#fff", borderTop: "1px solid #ede8ff", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-            <button style={{ width: 34, height: 34, borderRadius: 8, background: "#0f0f0f", border: "1px solid #1a1a1a", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#303030", flexShrink: 0 }}>
+            <button className="sh-icon-btn" style={{ width: 34, height: 34, borderRadius: 9, background: "#f4f2ff", border: "1px solid #ede8ff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#9990dd", flexShrink: 0, transition: "background 0.12s" }}>
               <Paperclip size={14} />
             </button>
-            <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: 8, background: "#0f0f0f", border: "1px solid #1a1a1a", borderRadius: 10, padding: "9px 12px" }}>
-              <button style={{ background: "none", border: "none", cursor: "pointer", color: "#252525", flexShrink: 0, lineHeight: 1 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: 8, background: "#f4f2ff", border: "1px solid #ede8ff", borderRadius: 10, padding: "9px 12px" }}>
+              <button style={{ background: "none", border: "none", cursor: "pointer", color: "#c4b8f8", flexShrink: 0, lineHeight: 1 }}>
                 <Smile size={15} />
               </button>
-              <textarea value={newMessage} onChange={e => setNewMessage(e.target.value)}
+              <textarea
+                value={newMessage}
+                onChange={e => setNewMessage(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                 placeholder={`Message ${active?.name?.split(" ")[0] || "…"}…`}
                 rows={1}
-                style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#ddd", fontSize: 13, resize: "none", lineHeight: 1.5, maxHeight: 80, overflowY: "auto" }}
+                style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#2d2870", fontSize: 13, resize: "none", lineHeight: 1.5, maxHeight: 80, overflowY: "auto", fontFamily: "inherit" }}
               />
-              <button style={{ background: "none", border: "none", cursor: "pointer", color: "#252525", flexShrink: 0, lineHeight: 1 }}>
+              <button style={{ background: "none", border: "none", cursor: "pointer", color: "#c4b8f8", flexShrink: 0, lineHeight: 1 }}>
                 <ImageIcon size={14} />
               </button>
             </div>
-            <button onClick={sendMessage} style={{
-              width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-              background: newMessage.trim() ? "#10b981" : "#0f0f0f",
-              border: newMessage.trim() ? "none" : "1px solid #1a1a1a",
+            <button onClick={sendMessage} className="sh-send" style={{
+              width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+              background: newMessage.trim() ? "#534AB7" : "#f4f2ff",
+              border: newMessage.trim() ? "none" : "1px solid #ede8ff",
               cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              color: newMessage.trim() ? "#fff" : "#303030", transition: "all 0.15s",
+              color: newMessage.trim() ? "#fff" : "#9990dd", transition: "all 0.15s",
+              boxShadow: newMessage.trim() ? "0 2px 8px rgba(83,74,183,0.25)" : "none",
             }}>
               {newMessage.trim() ? <Send size={14} /> : <Mic size={14} />}
             </button>
           </div>
         </div>
       </main>
+
+      {/* ── NEW CHAT / DIRECTORY SEARCH MODAL OVERLAY ── */}
+      {showSearchModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(45, 40, 112, 0.35)", backdropFilter: "blur(4px)",
+          zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 16
+        }} onClick={() => setShowSearchModal(false)}>
+          <div style={{
+            background: "#fff", width: "100%", maxWidth: 460, borderRadius: 16,
+            boxShadow: "0 20px 25px -5px rgba(83, 74, 183, 0.15), 0 10px 10px -5px rgba(83, 74, 183, 0.04)",
+            display: "flex", flexDirection: "column", maxHeight: "80vh", overflow: "hidden"
+          }} onClick={e => e.stopPropagation()}>
+            
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid #ede8ff", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#2d2870", letterSpacing: "-0.3px" }}>Start a connection</h3>
+                <p style={{ fontSize: 11, color: "#9990dd", marginTop: 2 }}>Search directory channels globally</p>
+              </div>
+              <button onClick={() => setShowSearchModal(false)} className="sh-icon-btn" style={{ width: 28, height: 28, borderRadius: 6, background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#9990dd" }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: "12px 20px", borderBottom: "1px solid #ede8ff" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, background: "#f4f2ff", border: "1px solid #ede8ff", borderRadius: 10, padding: "8px 12px" }}>
+                <Search size={14} color="#c4b8f8" />
+                <input 
+                  autoFocus
+                  value={userQuery} 
+                  onChange={e => setUserQuery(e.target.value)} 
+                  placeholder="Search name or @handle…" 
+                  style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#2d2870", fontSize: 13, fontFamily: "inherit" }} 
+                />
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: "8px 12px" }}>
+              {filteredDirectory.length > 0 ? (
+                filteredDirectory.map((user) => (
+                  <div 
+                    key={user.id} 
+                    className="sh-modal-row"
+                    onClick={() => handleSelectUser(user)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+                      borderRadius: 10, cursor: "pointer", transition: "background 0.1s"
+                    }}
+                  >
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EEEDFE", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: "#534AB7" }}>
+                        {user.initials || "…"}
+                      </div>
+                      {user.online && (
+                        <div style={{ position: "absolute", bottom: -1, right: -1, width: 8, height: 8, borderRadius: "50%", background: "#1D9E75", border: "1.5px solid #fff" }} />
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: "#2d2870" }}>{user.name}</div>
+                      <div style={{ fontSize: 11, color: "#9990dd", marginTop: 1 }}>{user.handle || `@${user.name.toLowerCase().replace(/\s+/g, "")}`}</div>
+                    </div>
+                    <span style={{ fontSize: 10, color: "#7F77DD", fontWeight: 500, padding: "4px 8px", background: "#EEEDFE", borderRadius: 6 }}>Message</span>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: "40px 20px", textAlign: "center", color: "#9990dd" }}>
+                  <Users size={24} style={{ margin: "0 auto 8px", opacity: 0.5 }} />
+                  <p style={{ fontSize: 12 }}>No system identity references found</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
