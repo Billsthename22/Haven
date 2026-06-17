@@ -1,14 +1,39 @@
-import { createClient } from "@/src/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { prisma } from "@/src/lib/prisma";
+
+function getBaseUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://havenn-rosy.vercel.app";
+}
+
+function getSpotifyRedirectUri() {
+  return process.env.SPOTIFY_REDIRECT_URI || `${getBaseUrl()}/api/spotify/callback`;
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const error = searchParams.get("error");
-  const base = process.env.NEXT_PUBLIC_SITE_URL!;
+  const base = getBaseUrl();
 
   if (error || !code) {
     return NextResponse.redirect(`${base}/dashboard?spotify_error=access_denied`);
+  }
+
+  const cookieStore = await cookies();
+  const sessionEmail = cookieStore.get("auth_session")?.value;
+
+  if (!sessionEmail) {
+    return NextResponse.redirect(`${base}/login`);
+  }
+
+  const user = await prisma.profile.findUnique({
+    where: { email: sessionEmail.toLowerCase().trim() },
+    select: { id: true },
+  });
+
+  if (!user) {
+    return NextResponse.redirect(`${base}/login`);
   }
 
   const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
@@ -22,27 +47,31 @@ export async function GET(req: NextRequest) {
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: `${base}/api/spotify/callback`,
+      redirect_uri: getSpotifyRedirectUri(),
     }),
   });
 
   if (!tokenRes.ok) {
+    const err = await tokenRes.text();
+    console.error("Spotify token exchange failed:", err);
     return NextResponse.redirect(`${base}/dashboard?spotify_error=token_exchange_failed`);
   }
 
   const tokens = await tokenRes.json();
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.redirect(`${base}/login`);
-  }
-
-  await supabase.from("spotify_tokens").upsert({
-    user_id: user.id,
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    expires_at: Date.now() + tokens.expires_in * 1000,
+  await prisma.spotifyToken.upsert({
+    where: { userId: user.id },
+    create: {
+      userId: user.id,
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+    },
+    update: {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+    },
   });
 
   return NextResponse.redirect(`${base}/dashboard?spotify_connected=1`);

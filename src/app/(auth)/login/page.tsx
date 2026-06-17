@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Mail, Lock, AlertTriangle, ShieldCheck, Terminal } from "lucide-react";
+import { Mail, Lock, AlertTriangle, ShieldCheck, ArrowRight } from "lucide-react";
 import Image from "next/image";
 
 export default function LoginPage() {
@@ -25,231 +25,246 @@ export default function LoginPage() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
       });
 
-      const data = (await response.json()) as {
-        error?: string;
-        requiresVerification?: boolean;
-      };
+      const data = await response.json() as { error?: string; requiresVerification?: boolean };
 
       if (!response.ok) {
         if (data.requiresVerification) {
-          setError("AUTH_FAILURE: Account unverified. Dispatching primary OTP matrix payload.");
+          setError("Please verify your email before logging in. Check your inbox for a verification link.");
         } else {
-          setError(data.error || "CRITICAL: Access authorization rejected. Credentials invalid.");
+          setError(data.error || "Incorrect email or password. Please try again.");
         }
         return;
       }
 
       window.location.href = "/dashboard";
     } catch (err) {
-      console.error("Login client breakdown:", err);
-      setError("SYSTEM_ERR: Unexpected telemetry interface collapse.");
+      console.error("Login error:", err);
+      setError("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    background: "#f7f7fb",
+    border: "1px solid #e5e0ff",
+    borderRadius: 10,
+    padding: "11px 14px 11px 40px",
+    color: "#111",
+    fontSize: 13,
+    outline: "none",
+    fontFamily: "inherit",
+    transition: "border-color 0.15s, box-shadow 0.15s",
+  };
+
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-zinc-100 flex flex-col lg:flex-row overflow-hidden relative antialiased font-mono">
-      {/* Tactical Grid Overlay & Ambient Glow */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f23_1px,transparent_1px),linear-gradient(to_bottom,#1f1f23_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-25" />
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[#7F77DD]/10 blur-[140px] rounded-full" />
-      </div>
+    <div style={{
+      minHeight: "100vh",
+      background: "#f4f2ff",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: "'Inter', -apple-system, sans-serif",
+      padding: "32px 16px",
+    }}>
+      <style>{`
+        .sh-input:focus { border-color: #7F77DD !important; box-shadow: 0 0 0 3px #7F77DD22 !important; background: #fff !important; }
+        .sh-btn:hover { opacity: 0.9; }
+        .sh-btn:active { transform: translateY(1px); }
+        .sh-google:hover { background: #f4f2ff !important; }
+        .sh-link { color: #7F77DD; text-decoration: none; font-weight: 600; }
+        .sh-link:hover { text-decoration: underline; }
+        .sh-forgot:hover { text-decoration: underline; }
+      `}</style>
 
-      {/* Mobile Top HUD */}
-      <header className="lg:hidden relative z-10 px-6 pt-10 pb-6 border-b border-zinc-900 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 border border-[#7F77DD]/40 bg-zinc-900/50 flex items-center justify-center">
-            <Image 
-              src="/logo2.png" 
-              alt="Safe Haven" 
-              width={20} 
-              height={20} 
-              style={{ height: "auto" }}
-              priority 
-              className="object-contain filter brightness-125" 
-            />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold tracking-[0.2em] uppercase text-white">Safe Haven</h1>
-            <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">SECURE_CORE_v1.0</p>
-          </div>
-        </div>
-        <div className="text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-1 text-zinc-400 tracking-wider">
-          STATUS: READY
-        </div>
-      </header>
+      <div style={{ width: "100%", maxWidth: 400 }}>
+        <div style={{
+          background: "#fff",
+          border: "0.5px solid #ede8ff",
+          borderRadius: 20,
+          padding: "36px 32px 28px",
+          position: "relative",
+          overflow: "hidden",
+        }}>
+          {/* Top accent */}
+          <div style={{
+            position: "absolute", top: 0, left: "25%", right: "25%",
+            height: 2.5, background: "#7F77DD", borderRadius: "0 0 6px 6px",
+          }} />
 
-      {/* Left Column: Tactical Cinematic Display Panel */}
-      <main className="hidden lg:flex flex-1 relative items-center border-r border-zinc-900 bg-gradient-to-b from-zinc-950 to-[#0d0d0f]">
-        <div className="relative z-10 flex flex-col justify-center px-20 w-full max-w-3xl">
-          <div className="flex items-center gap-3 mb-12">
-            <div className="h-10 w-10 border border-[#7F77DD] bg-[#7F77DD]/5 flex items-center justify-center shadow-[0_0_15px_rgba(127,119,221,0.15)]">
-              <Image 
-                src="/logo2.png" 
-                alt="Safe Haven" 
-                width={22} 
-                height={22} 
-                style={{ height: "auto" }}
-                priority 
-                className="object-contain filter brightness-125" 
-              />
+          {/* Logo */}
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <div style={{
+              width: 60, height: 60, margin: "0 auto 18px",
+              background: "#EEEDFE", border: "1px solid #c4b8f8",
+              borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center",
+              position: "relative",
+            }}>
+              <div style={{ position: "absolute", top: 5, left: 5, width: 8, height: 8, borderTop: "1.5px solid #7F77DD", borderLeft: "1.5px solid #7F77DD" }} />
+              <div style={{ position: "absolute", bottom: 5, right: 5, width: 8, height: 8, borderBottom: "1.5px solid #7F77DD", borderRight: "1.5px solid #7F77DD" }} />
+              <div style={{ width: 32, height: 32, background: "#534AB7", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Image src="/logo2.png" alt="Safe Haven" width={18} height={18} priority style={{ objectFit: "contain" }} />
+              </div>
             </div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: "#2d2870", margin: "0 0 6px", letterSpacing: "-0.5px" }}>
+              Welcome back
+            </h2>
+            <p style={{ fontSize: 13, color: "#9990dd", margin: 0, fontWeight: 500 }}>
+              Log in to your Safe Haven account
+            </p>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div style={{
+              display: "flex", alignItems: "flex-start", gap: 8,
+              background: "#FBEAF0", border: "1px solid #F4C0D1",
+              borderRadius: 10, padding: "10px 14px", marginBottom: 20,
+            }}>
+              <AlertTriangle size={14} color="#D4537E" style={{ marginTop: 1, flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: "#993556", lineHeight: 1.5 }}>{error}</span>
+            </div>
+          )}
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* Email */}
             <div>
-              <span className="text-md font-bold tracking-[0.25em] uppercase text-white">Safe Haven</span>
-              <div className="text-[9px] text-[#7F77DD] tracking-widest uppercase mt-0.5 font-bold">SECURE NODE OPERATOR</div>
-            </div>
-          </div>
-          
-          <h2 className="text-5xl font-black tracking-tight text-white uppercase leading-none">
-            AUTHENTICATE<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-[#7F77DD] to-zinc-500">
-              OPERATOR_ACCESS
-            </span>
-          </h2>
-          <p className="text-zinc-400 mt-6 max-w-md text-xs leading-relaxed font-sans">
-            Initializing encrypted session link sequence. Connection tunneling protocols mapped through standard architecture routines. 
-          </p>
-
-          {/* Telemetry Status Grid */}
-          <div className="mt-12 grid grid-cols-2 gap-4 max-w-md">
-            <div className="border border-zinc-800 bg-zinc-950/40 p-5 relative group overflow-hidden">
-              <div className="absolute top-0 left-0 w-2 h-[1px] bg-[#7F77DD]" />
-              <div className="absolute top-0 left-0 w-[1px] h-2 bg-[#7F77DD]" />
-              <p className="text-[10px] text-zinc-500 uppercase tracking-widest">ACTIVE_SECURE_CIRCLES</p>
-              <p className="text-2xl font-bold mt-1 text-white tracking-tight">24<span className="text-xs text-[#7F77DD] ml-1">▲</span></p>
-            </div>
-            <div className="border border-zinc-800 bg-zinc-950/40 p-5 relative group overflow-hidden">
-              <div className="absolute top-0 left-0 w-2 h-[1px] bg-[#7F77DD]" />
-              <div className="absolute top-0 left-0 w-[1px] h-2 bg-[#7F77DD]" />
-              <p className="text-[10px] text-zinc-500 uppercase tracking-widest">ENCRYPTED_PACKETS_TX</p>
-              <p className="text-2xl font-bold mt-1 text-white tracking-tight">1.2K<span className="text-[10px] text-zinc-600 font-normal ml-1">/SEC</span></p>
-            </div>
-          </div>
-
-          <div className="mt-16 flex items-center gap-2 text-[10px] text-zinc-500 tracking-wider uppercase">
-            <Terminal size={12} className="text-[#7F77DD]" /> SYSTEM CORE OVERWATCH // SYSTEM LEVEL PROVISIONED
-          </div>
-        </div>
-      </main>
-
-      {/* Right Column: High-Tech Login Interface Module */}
-      <section className="w-full lg:w-[560px] flex items-center justify-center px-4 py-8 lg:p-12 relative z-10 bg-zinc-950/20">
-        <div className="w-full max-w-sm">
-          {/* Glassmorphic Tactical Core Frame */}
-          <div className="border border-zinc-800 bg-zinc-950/60 backdrop-blur-xl p-6 sm:p-8 relative shadow-2xl">
-            
-            {/* Structural Geometric Tech Accents */}
-            <div className="absolute -top-[1px] -left-[1px] w-3 h-3 border-t-2 border-l-2 border-[#7F77DD]" />
-            <div className="absolute -top-[1px] -right-[1px] w-3 h-3 border-t-2 border-r-2 border-[#7F77DD]" />
-            <div className="absolute -bottom-[1px] -left-[1px] w-3 h-3 border-b-2 border-l-2 border-[#7F77DD]" />
-            <div className="absolute -bottom-[1px] -right-[1px] w-3 h-3 border-b-2 border-r-2 border-[#7F77DD]" />
-
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-2">
-                <ShieldCheck size={14} className="text-[#7F77DD]" />
-                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#7F77DD]">GATEWAY_AUTHENTICATION</span>
-              </div>
-              <h2 className="text-xl font-bold uppercase tracking-tight text-white">Console Login</h2>
-              <p className="text-zinc-500 mt-1 text-xs font-sans">Verify authorization sequence to establish local interface.</p>
-            </div>
-
-            {error && (
-              <div className="mb-6 flex items-start gap-2 border border-red-900/50 bg-red-950/20 px-4 py-3 text-xs text-red-400">
-                <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-red-500" />
-                <span className="font-mono">{error}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label htmlFor="email" className="text-[10px] tracking-wider text-zinc-400 flex items-center gap-2 uppercase font-bold">
-                  <Mail size={12} className="text-zinc-600" /> Operator Email
-                </label>
+              <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+                Email address
+              </label>
+              <div style={{ position: "relative" }}>
+                <Mail size={14} color="#c4b8f8" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)" }} />
                 <input
                   id="email"
                   type="email"
                   name="email"
                   required
                   autoComplete="email"
+                  placeholder="you@example.com"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="IDENTITY@CORE.SECURE"
-                  className="mt-2 w-full rounded-none bg-zinc-900/40 border border-zinc-800 px-4 py-3 text-white outline-none focus:border-[#7F77DD] focus:bg-zinc-950/60 transition text-xs placeholder-zinc-700 disabled:opacity-50 font-mono tracking-wide"
                   disabled={isLoading}
+                  className="sh-input"
+                  style={inputStyle}
                 />
               </div>
+            </div>
 
-              <div>
-                <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-[10px] tracking-wider text-zinc-400 flex items-center gap-2 uppercase font-bold">
-                    <Lock size={12} className="text-zinc-600" /> Access Cypher
-                  </label>
-                  <Link 
-                    href="/forgotpassword" 
-                    className="text-[10px] text-[#7F77DD] hover:text-[#938ce4] transition-colors uppercase font-bold tracking-wide"
-                  >
-                    Forgot Cypher?
-                  </Link>
-                </div>
+            {/* Password */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <label style={{ fontSize: 11, color: "#9990dd", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Password
+                </label>
+                <Link href="/forgotpassword" className="sh-forgot" style={{ fontSize: 11, color: "#7F77DD", fontWeight: 500, textDecoration: "none" }}>
+                  Forgot password?
+                </Link>
+              </div>
+              <div style={{ position: "relative" }}>
+                <Lock size={14} color="#c4b8f8" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)" }} />
                 <input
                   id="password"
                   type="password"
                   name="password"
                   required
                   autoComplete="current-password"
+                  placeholder="••••••••"
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="••••••••"
-                  className="mt-2 w-full rounded-none bg-zinc-900/40 border border-zinc-800 px-4 py-3 text-white outline-none focus:border-[#7F77DD] focus:bg-zinc-950/60 transition text-xs disabled:opacity-50 font-mono tracking-wide"
                   disabled={isLoading}
+                  className="sh-input"
+                  style={inputStyle}
                 />
               </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3.5 rounded-none bg-[#7F77DD] hover:bg-[#6c63cf] disabled:bg-zinc-900 disabled:text-zinc-600 text-white transition-all font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(127,119,221,0.15)] active:translate-y-[1px]"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="h-3 w-3 animate-spin rounded-none border border-white border-t-transparent" />
-                    RUNNING_AUTH_SEQ...
-                  </>
-                ) : "EXECUTE_SIGN_IN"}
-              </button>
-            </form>
-
-            {/* Sub-Actions / Alternatives Partition */}
-            <div className="my-6 flex items-center gap-3">
-              <div className="flex-1 h-[1px] bg-zinc-900" />
-              <span className="text-zinc-600 text-[9px] tracking-widest select-none font-bold">ALT_PATH</span>
-              <div className="flex-1 h-[1px] bg-zinc-900" />
             </div>
 
+            {/* Submit */}
             <button
-              type="button"
+              type="submit"
               disabled={isLoading}
-              className="w-full rounded-none border border-zinc-800 py-3 text-xs tracking-wider uppercase hover:bg-zinc-900/50 hover:border-zinc-700 transition flex items-center justify-center gap-2 text-zinc-300 disabled:opacity-50"
+              className="sh-btn"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                width: "100%", padding: "12px 0",
+                background: isLoading ? "#AFA9EC" : "#534AB7",
+                color: "#fff", border: "none", borderRadius: 11,
+                fontSize: 13, fontWeight: 600, cursor: isLoading ? "not-allowed" : "pointer",
+                transition: "opacity 0.15s, transform 0.1s", marginTop: 4,
+              }}
             >
-              Federate via Google Provider
+              {isLoading ? (
+                <>
+                  <div style={{ width: 13, height: 13, border: "2px solid #ffffff55", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  Log in <ArrowRight size={14} />
+                </>
+              )}
             </button>
+          </form>
 
-            <p className="text-center text-zinc-500 mt-6 text-xs font-sans">
-              Missing node clearance?{" "}
-              <Link href="/signup" className="text-[#7F77DD] hover:text-[#938ce4] font-bold transition-colors font-mono uppercase tracking-wide">
-                Register Node
-              </Link>
+          {/* Divider */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "20px 0" }}>
+            <div style={{ flex: 1, height: 1, background: "#f0eeff" }} />
+            <span style={{ fontSize: 11, color: "#c4b8f8", fontWeight: 500 }}>or</span>
+            <div style={{ flex: 1, height: 1, background: "#f0eeff" }} />
+          </div>
+
+          {/* Google */}
+          <button
+            type="button"
+            disabled={isLoading}
+            className="sh-google"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width: "100%", padding: "11px 0",
+              background: "transparent", color: "#534AB7",
+              border: "1px solid #c4b8f8", borderRadius: 11,
+              fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "background 0.15s",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
+              <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+              <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+              <path d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/>
+              <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          {/* Footer */}
+          <div style={{ borderTop: "1px solid #f0eeff", marginTop: 20, paddingTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#1D9E75", fontWeight: 600 }}>
+              <ShieldCheck size={13} color="#1D9E75" />
+              Encrypted connection
+            </div>
+            <p style={{ fontSize: 12, color: "#aaa", margin: 0 }}>
+              No account?{" "}
+              <Link href="/signup" className="sh-link">Sign up</Link>
             </p>
           </div>
         </div>
-      </section>
+
+        {/* Terms */}
+        <p style={{ textAlign: "center", fontSize: 11, color: "#9990dd", marginTop: 14, lineHeight: 1.5 }}>
+          By logging in, you agree to our{" "}
+          <span style={{ color: "#7F77DD", textDecoration: "underline", cursor: "pointer" }}>Terms of Service</span>
+          {" "}and{" "}
+          <span style={{ color: "#7F77DD", textDecoration: "underline", cursor: "pointer" }}>Privacy Policy</span>.
+        </p>
+      </div>
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }

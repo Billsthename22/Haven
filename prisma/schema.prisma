@@ -26,6 +26,7 @@ model Profile {
   posts        Post[]   @relation("UserPosts")
   likes        Like[]
   circles      Circle[] @relation("CircleMembers")
+  spotifyToken SpotifyToken?
 }
 
 model OtpCode {
@@ -102,4 +103,17 @@ model Event {
   title       String
   scheduledAt DateTime
   createdAt   DateTime @default(now())
+}
+
+model SpotifyToken {
+  userId       String   @id @map("user_id")
+  accessToken  String   @map("access_token")
+  refreshToken String   @map("refresh_token")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("spotify_tokens")
 }

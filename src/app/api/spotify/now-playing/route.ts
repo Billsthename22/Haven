@@ -1,7 +1,24 @@
-import { createClient } from "@/src/lib/supabase/server";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { prisma } from "@/src/lib/prisma";
 
-async function refreshToken(userId: string, refreshToken: string, supabase: Awaited<ReturnType<typeof createClient>>) {
+async function getCurrentUserId() {
+  const cookieStore = await cookies();
+  const sessionEmail = cookieStore.get("auth_session")?.value;
+
+  if (!sessionEmail) {
+    return null;
+  }
+
+  const user = await prisma.profile.findUnique({
+    where: { email: sessionEmail.toLowerCase().trim() },
+    select: { id: true },
+  });
+
+  return user?.id ?? null;
+}
+
+async function refreshToken(userId: string, refreshToken: string) {
   const res = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
@@ -19,39 +36,39 @@ async function refreshToken(userId: string, refreshToken: string, supabase: Awai
   if (!res.ok) return null;
 
   const data = await res.json();
-  const newExpiresAt = Date.now() + data.expires_in * 1000;
+  const expiresAt = new Date(Date.now() + data.expires_in * 1000);
 
-  await supabase.from("spotify_tokens").update({
-    access_token: data.access_token,
-    expires_at: newExpiresAt,
-    ...(data.refresh_token ? { refresh_token: data.refresh_token } : {}),
-  }).eq("user_id", userId);
+  await prisma.spotifyToken.update({
+    where: { userId },
+    data: {
+      accessToken: data.access_token,
+      expiresAt,
+      ...(data.refresh_token ? { refreshToken: data.refresh_token } : {}),
+    },
+  });
 
   return data.access_token as string;
 }
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const userId = await getCurrentUserId();
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: tokenRow } = await supabase
-    .from("spotify_tokens")
-    .select("access_token, refresh_token, expires_at")
-    .eq("user_id", user.id)
-    .single();
+  const tokenRow = await prisma.spotifyToken.findUnique({
+    where: { userId },
+  });
 
   if (!tokenRow) {
     return NextResponse.json({ connected: false });
   }
 
-  let accessToken: string = tokenRow.access_token;
+  let accessToken = tokenRow.accessToken;
 
-  if (Date.now() >= tokenRow.expires_at - 60_000) {
-    const refreshed = await refreshToken(user.id, tokenRow.refresh_token, supabase);
+  if (Date.now() >= tokenRow.expiresAt.getTime() - 60_000) {
+    const refreshed = await refreshToken(userId, tokenRow.refreshToken);
     if (!refreshed) return NextResponse.json({ connected: false });
     accessToken = refreshed;
   }
@@ -91,9 +108,15 @@ export async function GET() {
 }
 
 export async function DELETE() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  await supabase.from("spotify_tokens").delete().eq("user_id", user.id);
+  const userId = await getCurrentUserId();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  await prisma.spotifyToken.deleteMany({
+    where: { userId },
+  });
+
   return NextResponse.json({ success: true });
 }

@@ -1,39 +1,29 @@
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import * as PrismaGenerated from "../generated/prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaGenerated.PrismaClient | undefined;
 };
 
-let prismaClient = globalForPrisma.prisma;
-
-function getPrisma() {
-  if (prismaClient) {
-    return prismaClient;
-  }
-
+// 1. Create a function that spins up the client safely
+const createPrismaClient = () => {
   const databaseUrl = process.env.DATABASE_URL;
 
   if (!databaseUrl) {
     throw new Error("DATABASE_URL is not set");
   }
 
-  prismaClient = new PrismaGenerated.PrismaClient({
-    adapter: new PrismaPg({ connectionString: databaseUrl }),
+  const pool = new Pool({ connectionString: databaseUrl });
+  
+  return new PrismaGenerated.PrismaClient({
+    adapter: new PrismaPg(pool),
   });
+};
 
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = prismaClient;
-  }
+// 2. Export a clean instance directly instead of wrapping it in a Proxy
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-  return prismaClient;
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
 }
-
-export const prisma = new Proxy({} as PrismaGenerated.PrismaClient, {
-  get(_target, property, receiver) {
-    const client = getPrisma();
-    const value = Reflect.get(client, property, receiver);
-
-    return typeof value === "function" ? value.bind(client) : value;
-  },
-});
