@@ -14,7 +14,7 @@ import {
 // Imported isolated components
 import Header from "@/src/components/dashboard/Header";
 import Sidebar from "@/src/components/dashboard/Sidebar";
-import MobileNav from "@/src/components/dashboard/MobileNav"; // ✅ Fixed explicit module mapping
+import MobileNav from "@/src/components/dashboard/MobileNav";
  
 const GROUP_COLORS = [
   { dot: "#7F77DD", bg: "#EEEDFE", text: "#534AB7" },
@@ -26,6 +26,7 @@ const GROUP_COLORS = [
  
 export default function DashboardPage() {
   const router = useRouter();
+  // NOTE: activeTab state is preserved for the Sidebar component sync
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [userProfile, setUserProfile] = useState<{ id: string; fullName: string; email: string } | null>(null);
   const [circles, setCircles] = useState<any[]>([]);
@@ -438,10 +439,9 @@ export default function DashboardPage() {
         </div>
       </main>
  
-      {/* PWA MOBILE BOTTOM BAR NAVIGATION SYSTEM */}
+      {/* ── PWA MOBILE BOTTOM BAR NAVIGATION SYSTEM ── */}
+      {/* ✅ Dead props removed to resolve type compilation error */}
       <MobileNav 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
         onOpenComposer={() => openComposer("text")} 
       />
  
@@ -533,14 +533,16 @@ export default function DashboardPage() {
             <form onSubmit={handleCreateCircle}>
               <div className="sh-modal-body">
                 <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, marginBottom: 6 }}>Group Name</label>
-                <input type="text" placeholder="e.g., Close Friends, Study Crew" value={newCircleName} onChange={e => setNewCircleName(e.target.value)} style={inputStyle} />
-                <button type="submit" style={{ width: "100%", marginTop: 14, height: 38, background: "#7F77DD", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Create Group</button>
+                <input type="text" placeholder="e.g., Close Friends, Study Crew" value={newCircleName} onChange={e => setNewCircleName(e.target.value)} style={{ ...inputStyle, marginBottom: 16 }} />
+                <button type="submit" style={{ width: "100%", height: 40, background: "#7F77DD", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                  Create Group
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
- 
+
       {/* ── MODAL: INVITE FRIENDS ── */}
       {isInviteModalOpen && (
         <div className="sh-modal-overlay">
@@ -551,18 +553,18 @@ export default function DashboardPage() {
             </div>
             <form onSubmit={handleSendInvite}>
               <div className="sh-modal-body">
-                <div style={{ marginBottom: 12 }}>
-                  <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, marginBottom: 6 }}>Email Address</label>
-                  <input type="email" placeholder="friend@example.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} style={inputStyle} />
-                </div>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, marginBottom: 6 }}>Select Private Group</label>
-                  <select value={inviteCircleId} onChange={e => setInviteCircleId(e.target.value)} style={inputStyle}>
-                    <option value="">-- Choose a group --</option>
-                    {circles.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <button type="submit" style={{ width: "100%", height: 38, background: "#7F77DD", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Send Invitation</button>
+                <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, marginBottom: 6 }}>Email Address</label>
+                <input type="email" placeholder="friend@example.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} style={{ ...inputStyle, marginBottom: 14 }} />
+                
+                <label style={{ display: "block", fontSize: 11, color: "#9990dd", fontWeight: 600, marginBottom: 6 }}>Select Group Target</label>
+                <select value={inviteCircleId} onChange={e => setInviteCircleId(e.target.value)} style={{ ...inputStyle, marginBottom: 18 }}>
+                  <option value="">-- Choose a group --</option>
+                  {circles.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+
+                <button type="submit" style={{ width: "100%", height: 40, background: "#7F77DD", color: "#fff", border: "none", borderRadius: 10, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                  Send Invitation
+                </button>
               </div>
             </form>
           </div>
