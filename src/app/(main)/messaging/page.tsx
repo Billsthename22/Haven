@@ -65,6 +65,7 @@ export default function MessagesPage() {
   const [search, setSearch] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
+  const [currentUserId] = useState<string>("replace-with-actual-user-id");
   
   // Search Modal Layer State
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -99,7 +100,8 @@ export default function MessagesPage() {
         const res = await fetch("/api/users"); 
         if (res.ok) {
           const liveUsers = await res.json();
-          setDirectoryUsers(liveUsers);
+          // Filter out yourself from the search results index automatically
+          setDirectoryUsers(liveUsers.filter((u: DirectoryUser) => u.id !== currentUserId));
         }
       } catch (err) {
         console.error("Failed to sync global platform identity index:", err);
@@ -107,7 +109,7 @@ export default function MessagesPage() {
     }
     
     loadSystemDirectory();
-  }, [showSearchModal]);
+  }, [showSearchModal, currentUserId]);
 
   useEffect(() => {
     if (!activeConv) return;
@@ -134,7 +136,7 @@ export default function MessagesPage() {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: activeConv, text }),
+        body: JSON.stringify({ conversationId: activeConv, text, senderId: currentUserId }),
       });
       if (res.ok) {
         const update = await fetch(`/api/messages?conversationId=${activeConv}`);
@@ -177,6 +179,7 @@ export default function MessagesPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userId: currentUserId,
           recipientId: user.id
         }),
       });
@@ -385,7 +388,7 @@ export default function MessagesPage() {
 
       {/* ── MOBILE NAVIGATION DOCK INTEGRATION ── */}
       <div className="sh-mobile-dock-wrapper">
-        <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        <MobileNav onOpenComposer={() => setShowSearchModal(true)} />
       </div>
 
       {/* ── CHAT PANE ── */}
