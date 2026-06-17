@@ -1,24 +1,22 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Home, Users, MessageCircle, Bell, Plus } from "lucide-react";
 
 interface MobileNavProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   onOpenComposer: () => void;
 }
 
-export default function MobileNav({
-  activeTab,
-  setActiveTab,
-  onOpenComposer,
-}: MobileNavProps) {
+export default function MobileNav({ onOpenComposer }: MobileNavProps) {
+  const pathname = usePathname();
+
   const navItems = [
-    { icon: Home, label: "Dashboard" },
-    { icon: Users, label: "Communities" },
-    { icon: MessageCircle, label: "Messages" },
-    { icon: Bell, label: "Notifications", badge: 3 },
+    { icon: Home, label: "Dashboard", path: "/dashboard" },
+    { icon: Users, label: "Communities", path: "/communities" },
+    { icon: MessageCircle, label: "Messages", path: "/messages" },
+    { icon: Bell, label: "Notifications", path: "/notifications", badge: 3 },
   ];
 
   return (
@@ -51,8 +49,9 @@ export default function MobileNav({
           boxShadow: "0 -4px 20px rgba(83,74,183,0.05)"
         }}
       >
-        {navItems.map(({ icon: Icon, label, badge }, idx) => {
-          const active = activeTab === label;
+        {navItems.map(({ icon: Icon, label, path, badge }, idx) => {
+          // Checks if the current path matches exactly or starts with the base path
+          const active = pathname === path || pathname.startsWith(`${path}/`);
           
           return (
             <React.Fragment key={label}>
@@ -80,12 +79,10 @@ export default function MobileNav({
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={() => setActiveTab(label)}
+              <Link
+                href={path}
                 style={{
-                  background: "none",
-                  border: "none",
+                  textDecoration: "none",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -122,7 +119,7 @@ export default function MobileNav({
                     {badge}
                   </span>
                 )}
-              </button>
+              </Link>
             </React.Fragment>
           );
         })}

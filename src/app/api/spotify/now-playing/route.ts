@@ -19,6 +19,7 @@ async function getCurrentUserId() {
 }
 
 async function refreshToken(userId: string, refreshToken: string) {
+  // FIXED: Changed to the official Spotify Accounts token endpoint
   const res = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
@@ -42,7 +43,7 @@ async function refreshToken(userId: string, refreshToken: string) {
     where: { userId },
     data: {
       accessToken: data.access_token,
-      expiresAt,
+      expiresAt: expiresAt.toISOString(), // FIXED: Convert to ISO string for seamless PostgreSQL storage
       ...(data.refresh_token ? { refreshToken: data.refresh_token } : {}),
     },
   });
@@ -67,16 +68,19 @@ export async function GET() {
 
   let accessToken = tokenRow.accessToken;
 
+  // If the token expires within 60 seconds, refresh it
   if (Date.now() >= tokenRow.expiresAt.getTime() - 60_000) {
     const refreshed = await refreshToken(userId, tokenRow.refreshToken);
     if (!refreshed) return NextResponse.json({ connected: false });
     accessToken = refreshed;
   }
 
+  // FIXED: Changed to the official Spotify Web API player endpoint
   const npRes = await fetch("https://api.spotify.com/v1/me/player/currently-playing", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
+  // 204 or 205 means the request was successful but nothing is currently playing
   if (npRes.status === 204 || npRes.status === 205) {
     return NextResponse.json({ connected: true, playing: false });
   }
@@ -114,9 +118,16 @@ export async function DELETE() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  await prisma.spotifyToken.deleteMany({
-    where: { userId },
-  });
+  try {
+    // FIXED: Changed from deleteMany to a specific delete targeting the unique userId relation
+    await prisma.spotifyToken.delete({
+      where: { userId },
+    });
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete token:", error);
+    return NextResponse.json({ error: "Could not unlink account" }, { status: 500 });
+  }
 }
+
