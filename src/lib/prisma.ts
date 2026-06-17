@@ -1,6 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
-import * as PrismaGenerated from "../generated/prisma/client";
+import * as PrismaGenerated from "../generated/prisma";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaGenerated.PrismaClient | undefined;

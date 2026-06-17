@@ -2,12 +2,12 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js" // FIXED: Correct provider string for JavaScript/TypeScript client generation
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "postgresql" // FIXED: Stripped out the url line for Prisma 7 compatibility with Driver Adapters
 }
 
 model Profile {
@@ -23,10 +23,11 @@ model Profile {
   updatedAt    DateTime @updatedAt
 
   // Relationships
-  posts        Post[]   @relation("UserPosts")
-  likes        Like[]
-  circles      Circle[] @relation("CircleMembers")
-  spotifyToken SpotifyToken?
+  posts         Post[]         @relation("UserPosts")
+  likes         Like[]
+  circles       Circle[]       @relation("CircleMembers")
+  spotifyToken  SpotifyToken?
+  notifications Notification[]
 }
 
 model OtpCode {
@@ -69,7 +70,7 @@ model Post {
   content    String
   mediaUrl   String?
   type       String   @default("text") // text, photo, video, audio
-  isPublic   Boolean  @default(false)  // Added flag to scale queries cleanly for the public space feed
+  isPublic   Boolean  @default(false)  
   likesCount Int      @default(0)
   createdAt  DateTime @default(now())
 
@@ -77,12 +78,11 @@ model Post {
   authorId   String
   author     Profile  @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
   
-  // OPTIONAL FIELD PIPELINES FOR PUBLIC LOGIC
-  circleId   String?  // Changed to optional to allow independent public stream entries
-  circle     Circle?  @relation(fields: [circleId], references: [id], onDelete: Cascade) // Changed to optional 
+  circleId   String?  
+  circle     Circle?  @relation(fields: [circleId], references: [id], onDelete: Cascade) 
   likes      Like[]
 
-  @@index([isPublic]) // Optimized index for pulling down the global timeline quickly
+  @@index([isPublic]) 
 }
 
 model Like {
@@ -116,4 +116,18 @@ model SpotifyToken {
   user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("spotify_tokens")
+}
+
+model Notification {
+  id        String   @id @default(cuid()) 
+  userId    String   @map("user_id")
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  profile   Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications") 
 }
